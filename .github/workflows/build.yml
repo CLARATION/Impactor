@@ -45,16 +45,19 @@ jobs:
           path: dist/*
 
   build-windows:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
           - target: x86_64-pc-windows-gnu
             arch: x86_64
+            runner: ubuntu-24.04
           - target: i686-pc-windows-gnu
             arch: x86
-          - target: aarch64-pc-windows-gnullvm
+            runner: ubuntu-24.04
+          - target: aarch64-pc-windows-msvc
             arch: arm64
+            runner: windows-11-arm
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -67,24 +70,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mingw-w64
 
-      - name: Install llvm-mingw (arm64)
-        if: matrix.arch == 'arm64'
-        run: |
-          curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/20241119/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz -o llvm-mingw.tar.xz
-          tar -xf llvm-mingw.tar.xz
-          echo "$PWD/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64/bin" >> $GITHUB_PATH
-
-      - name: Build binaries (cross-compile)
-        env:
-          CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER: aarch64-w64-mingw32-clang
-          CC_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-clang
-          CXX_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-clang++
-          AR_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-ar
+      - name: Build binaries (Linux cross-compile)
+        if: matrix.arch != 'arm64'
         run: |
           cargo build --bins --workspace --release --target ${{ matrix.target }}
           mkdir -p dist
           cp target/${{ matrix.target }}/release/plumeimpactor.exe dist/Impactor-windows-${{ matrix.arch }}-portable.exe
           cp target/${{ matrix.target }}/release/plumesign.exe dist/plumesign-windows-${{ matrix.arch }}.exe
+
+      - name: Build binaries (Windows ARM64 native)
+        if: matrix.arch == 'arm64'
+        shell: pwsh
+        run: |
+          cargo build --bins --workspace --release --target ${{ matrix.target }}
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target/${{ matrix.target }}/release/plumeimpactor.exe" "dist/Impactor-windows-${{ matrix.arch }}-portable.exe"
+          Copy-Item "target/${{ matrix.target }}/release/plumesign.exe" "dist/plumesign-windows-${{ matrix.arch }}.exe"
 
       - name: Upload Bundles
         uses: actions/upload-artifact@v4
