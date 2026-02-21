@@ -46,40 +46,65 @@ jobs:
 
   build-windows:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            arch: x86_64
+          - target: i686-pc-windows-gnu
+            arch: x86
+          - target: aarch64-pc-windows-gnullvm
+            arch: arm64
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-gnu
+          targets: ${{ matrix.target }}
 
-      - name: Install mingw-w64
+      - name: Install mingw-w64 (x86_64/x86)
+        if: matrix.arch == 'x86_64' || matrix.arch == 'x86'
         run: |
           sudo apt-get update
           sudo apt-get install -y mingw-w64
 
-      - name: Build binaries (cross-compile)
+      - name: Install llvm-mingw (arm64)
+        if: matrix.arch == 'arm64'
         run: |
-          cargo build --bins --workspace --release --target x86_64-pc-windows-gnu
+          curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/20241119/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz -o llvm-mingw.tar.xz
+          tar -xf llvm-mingw.tar.xz
+          echo "$PWD/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Build binaries (cross-compile)
+        env:
+          CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER: aarch64-w64-mingw32-clang
+          CC_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-clang
+          CXX_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-clang++
+          AR_aarch64_pc_windows_gnullvm: aarch64-w64-mingw32-ar
+        run: |
+          cargo build --bins --workspace --release --target ${{ matrix.target }}
           mkdir -p dist
-          cp target/x86_64-pc-windows-gnu/release/plumeimpactor.exe dist/Impactor-windows-x86_64-portable.exe
-          cp target/x86_64-pc-windows-gnu/release/plumesign.exe dist/plumesign-windows-x86_64.exe
+          cp target/${{ matrix.target }}/release/plumeimpactor.exe dist/Impactor-windows-${{ matrix.arch }}-portable.exe
+          cp target/${{ matrix.target }}/release/plumesign.exe dist/plumesign-windows-${{ matrix.arch }}.exe
 
       - name: Upload Bundles
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BINARY_NAME }}-windows
+          name: ${{ env.BINARY_NAME }}-windows-${{ matrix.arch }}
           path: dist/*.exe
 
   build-windows-installer:
     runs-on: windows-latest
     needs: [build-windows]
+    strategy:
+      matrix:
+        arch: [x86_64, x86, arm64]
     steps:
       - uses: actions/checkout@v4
 
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.BINARY_NAME }}-windows
+          name: ${{ env.BINARY_NAME }}-windows-${{ matrix.arch }}
           path: dist
 
       - name: Install NSIS
@@ -89,15 +114,15 @@ jobs:
         run: |
           mkdir dist\nsis
           copy package\windows\* dist\nsis\
-          copy dist\Impactor-windows-x86_64-portable.exe dist\nsis\plumeimpactor.exe
+          copy dist\Impactor-windows-${{ matrix.arch }}-portable.exe dist\nsis\plumeimpactor.exe
           makensis dist\nsis\installer.nsi
-          move dist\nsis\installer.exe dist\Impactor-windows-x86_64-setup.exe
+          move dist\nsis\installer.exe dist\Impactor-windows-${{ matrix.arch }}-setup.exe
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BINARY_NAME }}-windows-installer
-          path: dist/Impactor-windows-x86_64-setup.exe
+          name: ${{ env.BINARY_NAME }}-windows-installer-${{ matrix.arch }}
+          path: dist/Impactor-windows-${{ matrix.arch }}-setup.exe
 
   build-macos-slices:
     runs-on: ubuntu-24.04
