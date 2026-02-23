@@ -18,7 +18,7 @@ The project is seperated in multiple modules, all serve single or multiple uses 
 
 | Module                 | Description                                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `apps/plumeimpactor`   | GUI interface for the crates shown below, backend using wxWidgets (with a rust ffi wrapper, wxDragon).                        |
+| `apps/plumeimpactor`   | GUI interface for the crates shown below, backend using Iced.                        |
 | `apps/plumesign`       | Simple CLI interface for signing, using `clap`.                                                                               |
 | `crates/plume_core`.   | Handles all api request used for communicating with Apple developer services, along with providing auth for Apple's grandslam |
 | `crates/plume_gestalt` | Wrapper for `libMobileGestalt.dylib`, used for obtaining your Mac's UDID for Apple Silicon sideloading.                       |
