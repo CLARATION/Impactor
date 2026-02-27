@@ -43,6 +43,8 @@ pub enum Message {
     TrayIconClicked,
     #[cfg(target_os = "linux")]
     GtkTick,
+    #[cfg(target_os = "macos")]
+    MacOsActivationTick,
 
     // Refresh operations
     RefreshAppNow {
@@ -117,6 +119,7 @@ impl Impactor {
             (Some(id), open_task.discard())
         };
         crate::macos_app::set_main_window_visible(main_window.is_some());
+        crate::macos_app::reset_activation_state();
 
         (
             Self {
@@ -293,6 +296,14 @@ impl Impactor {
             Message::GtkTick => {
                 while gtk::glib::MainContext::default().iteration(false) {}
                 Task::none()
+            }
+            #[cfg(target_os = "macos")]
+            Message::MacOsActivationTick => {
+                if self.main_window.is_none() && crate::macos_app::activation_reopen_requested() {
+                    Task::done(Message::RelaunchRequested)
+                } else {
+                    Task::none()
+                }
             }
             Message::RelaunchRequested => {
                 if self.main_window.is_none() {

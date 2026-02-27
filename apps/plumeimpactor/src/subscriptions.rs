@@ -108,6 +108,11 @@ pub(crate) fn tray_subscription() -> Subscription<Message> {
                             let _ = tx.unbounded_send(Message::GtkTick);
                         }
 
+                        #[cfg(target_os = "macos")]
+                        {
+                            let _ = tx.unbounded_send(Message::MacOsActivationTick);
+                        }
+
                         std::thread::sleep(std::time::Duration::from_millis(32));
                     }
                 });
