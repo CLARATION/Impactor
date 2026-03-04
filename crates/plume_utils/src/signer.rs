@@ -99,25 +99,32 @@ impl Signer {
                         .into_iter()
                         .collect::<Vec<_>>();
 
+                    let id_key = match self.options.app {
+                        SignerApp::StikStore | SignerApp::StikStore2 => "MachineID",
+                        _ => "ALTCertificateID",
+                    };
+                    let cert_file_name = match self.options.app {
+                        SignerApp::StikStore | SignerApp::StikStore2 => "Certificate.p12",
+                        _ => "ALTCertificate.p12",
+                    };
+
                     match self.options.app {
                         SignerApp::LiveContainerAndSideStore => {
                             if let Some(embedded_bundle) = bundles
                                 .iter()
                                 .find(|b| b.bundle_dir().ends_with("SideStoreApp.framework"))
                             {
-                                embedded_bundle
-                                    .set_info_plist_key("ALTCertificateID", &**serial_number)?;
+                                embedded_bundle.set_info_plist_key(id_key, &**serial_number)?;
                                 fs::write(
-                                    embedded_bundle.bundle_dir().join("ALTCertificate.p12"),
+                                    embedded_bundle.bundle_dir().join(cert_file_name),
                                     p12_data,
                                 )
                                 .await?;
                             }
                         }
                         SignerApp::SideStore | SignerApp::AltStore => {
-                            bundle.set_info_plist_key("ALTCertificateID", &**serial_number)?;
-                            fs::write(bundle.bundle_dir().join("ALTCertificate.p12"), p12_data)
-                                .await?;
+                            bundle.set_info_plist_key(id_key, &**serial_number)?;
+                            fs::write(bundle.bundle_dir().join(cert_file_name), p12_data).await?;
                         }
                         _ => {}
                     }
