@@ -195,12 +195,14 @@ impl RefreshDaemon {
         };
 
         let identity_is_new = {
+            let mut on_certificate_reset = crate::certificate_reset::confirm;
             let identity = CertificateIdentity::new_with_session(
                 &session,
                 get_data_path(),
                 None,
                 team_id,
                 false,
+                Some(&mut on_certificate_reset),
             )
             .await
             .map_err(|e| format!("Failed to create identity: {}", e))?;
@@ -274,12 +276,14 @@ impl RefreshDaemon {
         };
 
         let team_id_string = team_id.to_string();
+        let mut on_certificate_reset = crate::certificate_reset::confirm;
         let signing_identity = CertificateIdentity::new_with_session(
             session,
             get_data_path(),
             None,
             &team_id_string,
             false,
+            Some(&mut on_certificate_reset),
         )
         .await
         .map_err(|e| format!("Failed to create signing identity: {}", e))?;

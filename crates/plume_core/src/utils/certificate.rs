@@ -59,6 +59,7 @@ impl CertificateIdentity {
         machine_name: Option<String>,
         team_id: &String,
         is_export: bool,
+        on_certificate_reset: Option<&mut dyn FnMut() -> bool>,
     ) -> Result<Self, Error> {
         let machine_name = machine_name.unwrap_or_else(|| MACHINE_NAME.to_string());
 
@@ -99,7 +100,13 @@ impl CertificateIdentity {
                 [cert_pem.into_bytes(), key_pem.into_bytes()]
             } else {
                 let (certificate, priv_key) = identity
-                    .request_new_certificate(session, team_id, &machine_name, certs)
+                    .request_new_certificate(
+                        session,
+                        team_id,
+                        &machine_name,
+                        certs,
+                        on_certificate_reset,
+                    )
                     .await?;
                 let cert_pem = encode_string(
                     "CERTIFICATE",
@@ -115,7 +122,13 @@ impl CertificateIdentity {
             }
         } else {
             let (cert, priv_key) = identity
-                .request_new_certificate(session, team_id, &machine_name, certs)
+                .request_new_certificate(
+                    session,
+                    team_id,
+                    &machine_name,
+                    certs,
+                    on_certificate_reset,
+                )
                 .await?;
             let cert_pem =
                 encode_string("CERTIFICATE", LineEnding::LF, cert.cert_content.as_ref()).unwrap();
@@ -254,6 +267,7 @@ impl CertificateIdentity {
         team_id: &String,
         machine_name: &String,
         certs: Vec<Cert>,
+        mut on_certificate_reset: Option<&mut dyn FnMut() -> bool>,
     ) -> Result<(Cert, RsaPrivateKey), Error> {
         let priv_key = RsaPrivateKey::new(&mut OsRng, 2048)?;
         let priv_key_der = priv_key.to_pkcs8_der()?;
@@ -276,6 +290,7 @@ impl CertificateIdentity {
             .iter()
             .map(|c| c.serial_number.clone())
             .collect::<Vec<_>>();
+        let mut warned_about_reset = false;
 
         // When we submit a CSR theres a high chance of it failing, at least
         // on free developer accounts, we put it in a loop so whenever it does
@@ -293,6 +308,17 @@ impl CertificateIdentity {
                     // 7460 is for too many certificates (I think)
                     if matches!(&e, Error::DeveloperApi { result_code, .. } if *result_code == 7460)
                     {
+                        if !warned_about_reset {
+                            if let Some(callback) = on_certificate_reset.as_deref_mut() {
+                                if !callback() {
+                                    return Err(Error::Certificate(
+                                        "Certificate reset cancelled".into(),
+                                    ));
+                                }
+                            }
+                            warned_about_reset = true;
+                        }
+
                         // Try to revoke certificates from the candidate list
                         let mut revoked_any = false;
                         for cid in &cert_serial_numbers {
