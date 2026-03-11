@@ -7,19 +7,28 @@ use crate::developer_endpoint;
 use crate::Error;
 
 impl DeveloperSession {
-    pub async fn v1_list_app_ids(&self, team: &String) -> Result<AppIDsResponse, Error> {
+    pub async fn v1_list_app_ids(
+        &self,
+        team: &String,
+        filter: Option<&String>,
+    ) -> Result<AppIDsResponse, Error> {
         let endpoint = developer_endpoint!("/v1/bundleIds");
+
+        let mut query = String::from("limit=1000");
+
+        if let Some(identifier) = filter {
+            query.push_str(&format!("&filter[identifier]={}", identifier));
+        }
 
         let body = json!({
             "teamId": team,
-            "urlEncodedQueryParams": "limit=1000"
+            "urlEncodedQueryParams": query
         });
 
         let response = self
             .v1_send_request(&endpoint, Some(body), Some(RequestType::Get))
             .await?;
         let response_data: AppIDsResponse = serde_json::from_value(response)?;
-
         Ok(response_data)
     }
 
@@ -28,7 +37,7 @@ impl DeveloperSession {
         team: &String,
         app_id: &String,
     ) -> Result<Option<AppID>, Error> {
-        let response_data = self.v1_list_app_ids(team).await?;
+        let response_data = self.v1_list_app_ids(team, Some(app_id)).await?;
 
         let app_id = response_data
             .data

@@ -91,7 +91,10 @@ impl CertificateIdentity {
                 let cert_pem = encode_string(
                     "CERTIFICATE",
                     LineEnding::LF,
-                    certificate.cert_content.as_ref(),
+                    certificate
+                        .cert_content
+                        .ok_or(Error::CertificatePemMissing)?
+                        .as_ref(),
                 )
                 .unwrap();
                 let key_pem = priv_key.to_pkcs8_pem(Default::default())?.to_string();
@@ -101,10 +104,14 @@ impl CertificateIdentity {
                 let (certificate, priv_key) = identity
                     .request_new_certificate(session, team_id, &machine_name, certs)
                     .await?;
+
                 let cert_pem = encode_string(
                     "CERTIFICATE",
                     LineEnding::LF,
-                    certificate.cert_content.as_ref(),
+                    certificate
+                        .cert_content
+                        .ok_or(Error::CertificatePemMissing)?
+                        .as_ref(),
                 )
                 .unwrap();
                 let key_pem = priv_key.to_pkcs8_pem(Default::default())?.to_string();
@@ -117,8 +124,14 @@ impl CertificateIdentity {
             let (cert, priv_key) = identity
                 .request_new_certificate(session, team_id, &machine_name, certs)
                 .await?;
-            let cert_pem =
-                encode_string("CERTIFICATE", LineEnding::LF, cert.cert_content.as_ref()).unwrap();
+            let cert_pem = encode_string(
+                "CERTIFICATE",
+                LineEnding::LF,
+                cert.cert_content
+                    .ok_or(Error::CertificatePemMissing)?
+                    .as_ref(),
+            )
+            .unwrap();
             let key_pem = priv_key.to_pkcs8_pem(Default::default())?.to_string();
 
             fs::write(&key_path, &key_pem)?;
@@ -231,16 +244,18 @@ impl CertificateIdentity {
 
         for cert in certs {
             if cert.machine_name.as_deref() == Some(machine_name) {
-                let parsed_cert = X509Certificate::from_der(&cert.cert_content)?;
-                if pub_key_der_obj == parsed_cert.public_key_data().as_ref() {
-                    // We need to save the machine_id for our P12
-                    if let Some(ref machine_id) = cert.machine_id {
-                        self.set_machine_id(machine_id.clone());
+                if let Some(cert_content) = &cert.cert_content {
+                    let parsed_cert = X509Certificate::from_der(&cert_content)?;
+                    if pub_key_der_obj == parsed_cert.public_key_data().as_ref() {
+                        // We need to save the machine_id for our P12
+                        if let Some(ref machine_id) = cert.machine_id {
+                            self.set_machine_id(machine_id.clone());
+                        }
+
+                        self.set_serial_number(cert.serial_number.clone());
+
+                        return Ok(Some(cert));
                     }
-
-                    self.set_serial_number(cert.serial_number.clone());
-
-                    return Ok(Some(cert));
                 }
             }
         }

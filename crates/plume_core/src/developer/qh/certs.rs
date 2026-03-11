@@ -97,7 +97,7 @@ pub struct Cert {
     pub expiration_date: Date,
     certificate_platform: Option<String>,
     pub cert_type: Option<CertType>,
-    pub cert_content: Data,
+    pub cert_content: Option<Data>,
     pub machine_id: Option<String>,
     pub machine_name: Option<String>,
 }
