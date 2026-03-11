@@ -38,7 +38,7 @@ rsa = "0.9.8"
 x509-certificate = "0.24.0"
 pem = "3.0.5"
 pem-rfc7468 = "0.7.0"
-rcgen = "0.9.3"
+rcgen = "0.12.1"
 sha1 = "0.10.6"             # p12
 p12-keystore = "0.2.0"      # p12 crate only supports legacy PKCS#12
 # Apple
