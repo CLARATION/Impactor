@@ -284,7 +284,7 @@ pub async fn app_ids(args: AppIdsArgs) -> Result<()> {
         args.team_id.unwrap()
     };
 
-    let p = session.v1_list_app_ids(&team_id).await?.data;
+    let p = session.v1_list_app_ids(&team_id, None).await?.data;
 
     log::info!("{:#?}", p);
 

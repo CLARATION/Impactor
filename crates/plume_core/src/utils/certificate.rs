@@ -93,7 +93,7 @@ impl CertificateIdentity {
                     LineEnding::LF,
                     certificate
                         .cert_content
-                        .expect("certificate content should always be present here")
+                        .ok_or(Error::CertificatePemMissing)?
                         .as_ref(),
                 )
                 .unwrap();
@@ -104,12 +104,13 @@ impl CertificateIdentity {
                 let (certificate, priv_key) = identity
                     .request_new_certificate(session, team_id, &machine_name, certs)
                     .await?;
+
                 let cert_pem = encode_string(
                     "CERTIFICATE",
                     LineEnding::LF,
                     certificate
                         .cert_content
-                        .expect("certificate content should always be present here")
+                        .ok_or(Error::CertificatePemMissing)?
                         .as_ref(),
                 )
                 .unwrap();
@@ -127,7 +128,7 @@ impl CertificateIdentity {
                 "CERTIFICATE",
                 LineEnding::LF,
                 cert.cert_content
-                    .expect("certificate content should always be present here")
+                    .ok_or(Error::CertificatePemMissing)?
                     .as_ref(),
             )
             .unwrap();
