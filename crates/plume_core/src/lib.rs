@@ -61,7 +61,7 @@ pub enum Error {
     #[error("PKCS8 RSA error: {0}")]
     PKCS8(#[from] rsa::pkcs8::Error),
     #[error("RCGen error: {0}")]
-    RcGen(#[from] rcgen::RcgenError),
+    RcGen(#[from] rcgen::Error),
     #[error("AES-GCM error: {0}")]
     AesGcm(#[from] aes_gcm::Error),
     #[error("AES-GCM slice error: {0}")]
