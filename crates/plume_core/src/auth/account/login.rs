@@ -10,8 +10,17 @@ use crate::auth::account::{check_error, parse_response};
 use crate::auth::anisette_data::AnisetteData;
 use crate::auth::{
     Account, ChallengeRequest, ChallengeRequestBody, GSA_ENDPOINT, InitRequest, InitRequestBody,
-    LoginState, RequestHeader,
+    LoginState, RequestHeader, TwoFactorInput, TwoFactorMethod,
 };
+
+fn default_two_factor_method(methods: Vec<TwoFactorMethod>) -> Result<TwoFactorMethod, String> {
+    methods
+        .iter()
+        .find(|method| matches!(method, TwoFactorMethod::TrustedDevice))
+        .cloned()
+        .or_else(|| methods.into_iter().next())
+        .ok_or_else(|| "No 2FA methods available".to_string())
+}
 
 #[macro_export]
 macro_rules! plist_get_string {
@@ -48,16 +57,43 @@ impl Account {
         tfa_closure: impl Fn() -> Result<String, String>,
         config: AnisetteConfiguration,
     ) -> Result<Account, Error> {
-        let anisette = AnisetteData::new(config).await?;
-        Account::login_with_anisette(appleid_closure, tfa_closure, anisette).await
+        Account::login_with_method_selection(
+            appleid_closure,
+            default_two_factor_method,
+            |_| tfa_closure().map(TwoFactorInput::Code),
+            config,
+        )
+        .await
     }
 
-    pub async fn login_with_anisette<
+    pub async fn login_with_method_selection<
         F: Fn() -> Result<(String, String), String>,
-        G: Fn() -> Result<String, String>,
+        G: Fn(Vec<TwoFactorMethod>) -> Result<TwoFactorMethod, String>,
+        H: Fn(&TwoFactorMethod) -> Result<TwoFactorInput, String>,
     >(
         appleid_closure: F,
-        tfa_closure: G,
+        tfa_method_closure: G,
+        tfa_closure: H,
+        config: AnisetteConfiguration,
+    ) -> Result<Account, Error> {
+        let anisette = AnisetteData::new(config).await?;
+        Account::login_with_anisette_and_method_selection(
+            appleid_closure,
+            tfa_method_closure,
+            tfa_closure,
+            anisette,
+        )
+        .await
+    }
+
+    async fn login_with_anisette_and_method_selection<
+        F: Fn() -> Result<(String, String), String>,
+        G: Fn(Vec<TwoFactorMethod>) -> Result<TwoFactorMethod, String>,
+        H: Fn(&TwoFactorMethod) -> Result<TwoFactorInput, String>,
+    >(
+        appleid_closure: F,
+        tfa_method_closure: G,
+        tfa_closure: H,
         anisette: AnisetteData,
     ) -> Result<Account, Error> {
         let mut _self = Account::new_with_anisette(anisette)?;
@@ -66,32 +102,62 @@ impl Account {
         })?;
 
         let mut response = _self.login_email_pass(&username, &password).await?;
+        let mut pending_method: Option<TwoFactorMethod> = None;
 
         loop {
             match response {
-                LoginState::NeedsDevice2FA => response = _self.send_2fa_to_devices().await?,
-                LoginState::Needs2FAVerification => {
-                    response = _self
-                        .verify_2fa(tfa_closure().map_err(|e| {
-                            Error::AuthSrpWithMessage(0, format!("Failed to get 2FA code: {}", e))
-                        })?)
-                        .await?
+                state @ (LoginState::NeedsDevice2FA | LoginState::NeedsSMS2FA) => {
+                    let methods = _self
+                        .available_two_factor_methods(matches!(state, LoginState::NeedsDevice2FA))
+                        .await?;
+                    let selected_method = if methods.len() == 1 {
+                        methods[0].clone()
+                    } else {
+                        tfa_method_closure(methods).map_err(|e| {
+                            Error::AuthSrpWithMessage(
+                                0,
+                                format!("Failed to get 2FA method selection: {}", e),
+                            )
+                        })?
+                    };
+
+                    pending_method = Some(selected_method.clone());
+                    response = _self.start_two_factor_method(&selected_method).await?;
                 }
-                LoginState::NeedsSMS2FA => response = _self.send_sms_2fa_to_devices(1).await?,
+                LoginState::Needs2FAVerification => {
+                    let method = pending_method
+                        .as_ref()
+                        .unwrap_or(&TwoFactorMethod::TrustedDevice);
+                    let input = tfa_closure(method).map_err(|e| {
+                        Error::AuthSrpWithMessage(0, format!("Failed to get 2FA input: {}", e))
+                    })?;
+                    match input {
+                        TwoFactorInput::Code(code) => response = _self.verify_2fa(code).await?,
+                        TwoFactorInput::Method(next_method) => {
+                            pending_method = Some(next_method.clone());
+                            response = _self.start_two_factor_method(&next_method).await?;
+                        }
+                    }
+                }
                 LoginState::NeedsSMS2FAVerification(body) => {
-                    response = _self
-                        .verify_sms_2fa(
-                            tfa_closure().map_err(|e| {
-                                Error::AuthSrpWithMessage(
-                                    0,
-                                    format!("Failed to get SMS 2FA code: {}", e),
-                                )
-                            })?,
-                            body,
-                        )
-                        .await?
+                    let method = pending_method.as_ref().ok_or_else(|| {
+                        Error::AuthSrpWithMessage(0, "Missing pending 2FA method".to_string())
+                    })?;
+                    let input = tfa_closure(method).map_err(|e| {
+                        Error::AuthSrpWithMessage(0, format!("Failed to get 2FA input: {}", e))
+                    })?;
+                    match input {
+                        TwoFactorInput::Code(code) => {
+                            response = _self.verify_sms_2fa(code, body).await?
+                        }
+                        TwoFactorInput::Method(next_method) => {
+                            pending_method = Some(next_method.clone());
+                            response = _self.start_two_factor_method(&next_method).await?;
+                        }
+                    }
                 }
                 LoginState::NeedsLogin => {
+                    pending_method = None;
                     response = _self.login_email_pass(&username, &password).await?
                 }
                 LoginState::LoggedIn => return Ok(_self),
@@ -104,6 +170,23 @@ impl Account {
                 }
             }
         }
+    }
+
+    pub async fn login_with_anisette<
+        F: Fn() -> Result<(String, String), String>,
+        G: Fn() -> Result<String, String>,
+    >(
+        appleid_closure: F,
+        tfa_closure: G,
+        anisette: AnisetteData,
+    ) -> Result<Account, Error> {
+        Account::login_with_anisette_and_method_selection(
+            appleid_closure,
+            default_two_factor_method,
+            |_| tfa_closure().map(TwoFactorInput::Code),
+            anisette,
+        )
+        .await
     }
 
     pub async fn login_email_pass(

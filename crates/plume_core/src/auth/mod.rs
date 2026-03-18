@@ -138,13 +138,51 @@ pub struct VerifyBody {
 }
 
 #[repr(C)]
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TrustedPhoneNumber {
     pub number_with_dial_code: String,
     pub last_two_digits: String,
     pub push_mode: String,
     pub id: u32,
+}
+
+impl TrustedPhoneNumber {
+    pub fn display_number(&self) -> String {
+        if !self.number_with_dial_code.trim().is_empty() {
+            self.number_with_dial_code.clone()
+        } else if !self.last_two_digits.trim().is_empty() {
+            format!("number ending in {}", self.last_two_digits)
+        } else {
+            "unknown number".to_string()
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TwoFactorMethod {
+    TrustedDevice,
+    Sms(TrustedPhoneNumber),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TwoFactorInput {
+    Code(String),
+    Method(TwoFactorMethod),
+}
+
+impl TwoFactorMethod {
+    pub fn prompt(&self) -> String {
+        match self {
+            Self::TrustedDevice => {
+                "Enter the verification code shown on your trusted device:".to_string()
+            }
+            Self::Sms(phone) => format!(
+                "Enter the verification code sent by SMS to {}:",
+                phone.display_number()
+            ),
+        }
+    }
 }
 
 #[derive(Deserialize)]

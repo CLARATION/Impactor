@@ -4,9 +4,55 @@ use crate::Error;
 use base64::{Engine, engine::general_purpose};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
-use crate::auth::{Account, AuthenticationExtras, LoginState, PhoneNumber, VerifyBody, VerifyCode};
+use crate::auth::{
+    Account, AuthenticationExtras, LoginState, PhoneNumber, TwoFactorMethod, VerifyBody, VerifyCode,
+};
 
 impl Account {
+    pub(super) async fn available_two_factor_methods(
+        &self,
+        include_trusted_device: bool,
+    ) -> Result<Vec<TwoFactorMethod>, Error> {
+        let mut methods = Vec::new();
+        let extras = match self.get_auth_extras().await {
+            Ok(extras) => Some(extras),
+            Err(_err) if include_trusted_device => None,
+            Err(err) => return Err(err),
+        };
+
+        if include_trusted_device {
+            methods.push(TwoFactorMethod::TrustedDevice);
+        }
+
+        if let Some(extras) = extras {
+            methods.extend(
+                extras
+                    .trusted_phone_numbers
+                    .into_iter()
+                    .map(TwoFactorMethod::Sms),
+            );
+        }
+
+        if methods.is_empty() {
+            return Err(Error::AuthSrpWithMessage(
+                0,
+                "No two-factor verification methods are available for this account".to_string(),
+            ));
+        }
+
+        Ok(methods)
+    }
+
+    pub(super) async fn start_two_factor_method(
+        &self,
+        method: &TwoFactorMethod,
+    ) -> Result<LoginState, Error> {
+        match method {
+            TwoFactorMethod::TrustedDevice => self.send_2fa_to_devices().await,
+            TwoFactorMethod::Sms(phone) => self.send_sms_2fa_to_devices(phone.id).await,
+        }
+    }
+
     pub async fn send_2fa_to_devices(&self) -> Result<LoginState, Error> {
         let headers = self.build_2fa_headers(false).await;
 
@@ -84,7 +130,7 @@ impl Account {
     }
 
     pub async fn verify_2fa(&self, code: String) -> Result<LoginState, Error> {
-        log::debug!("Verifying SMS 2FA with code: {}", code);
+        log::debug!("Verifying 2FA with code: {}", code);
 
         let headers = self.build_2fa_headers(false);
         let res = self
