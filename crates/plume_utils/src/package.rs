@@ -1,11 +1,13 @@
 use super::{Bundle, PlistInfoTrait};
-use crate::{Error, SignerApp, SignerOptions, cgbi};
+use crate::{cgbi, Error, SignerApp, SignerOptions};
+
 use plist::Dictionary;
-use std::path::PathBuf;
-use std::{env, fs, io::Read};
+use std::fs;
+use std::io::{Read, Write};
+use std::path::{Component, Path, PathBuf};
 use uuid::Uuid;
-use zip::ZipArchive;
 use zip::write::FileOptions;
+use zip::ZipArchive;
 
 #[derive(Debug, Clone)]
 pub struct Package {
@@ -19,24 +21,26 @@ pub struct Package {
 
 impl Package {
     pub fn new(package_file: PathBuf) -> Result<Self, Error> {
-        let stage_dir = env::temp_dir().join(format!(
+        let stage_dir = std::env::temp_dir().join(format!(
             "plume_stage_{:08}",
             Uuid::new_v4().to_string().to_uppercase()
         ));
         let out_package_file = stage_dir.join("stage.ipa");
 
-        fs::create_dir_all(&stage_dir).ok();
+        fs::create_dir_all(&stage_dir)?;
         fs::copy(&package_file, &out_package_file)?;
 
         let file = fs::File::open(&out_package_file)?;
         let mut archive = ZipArchive::new(file)?;
-        let archive_entries = (0..archive.len())
-            .filter_map(|i| archive.by_index(i).ok().map(|f| f.name().to_string()))
-            .collect::<Vec<_>>();
+
+        let mut archive_entries = Vec::with_capacity(archive.len());
+        for i in 0..archive.len() {
+            let file = archive.by_index(i)?;
+            archive_entries.push(Self::decoded_zip_name_raw(file.name_raw(), file.name()));
+        }
 
         let info_plist_dictionary =
             Self::get_info_plist_from_archive(&out_package_file, &archive_entries)?;
-
         let app_icon_data = Self::extract_icon_from_archive(
             &out_package_file,
             &archive_entries,
@@ -57,37 +61,95 @@ impl Package {
         &self.package_file
     }
 
-    fn get_info_plist_from_archive(
-        archive_path: &PathBuf,
-        archive_entries: &[String],
-    ) -> Result<Dictionary, Error> {
-        let file = fs::File::open(archive_path)?;
-        let mut archive = ZipArchive::new(file)?;
+    fn decoded_zip_name_raw(raw: &[u8], fallback: &str) -> String {
+        // Heuristic:
+        // 1) If the raw bytes are valid UTF-8, trust that first.
+        //    This fixes many IPA files whose ZIP entries are UTF-8 but missing the ZIP UTF-8 flag.
+        // 2) Otherwise fall back to the ZIP crate's decoded name().
+        match std::str::from_utf8(raw) {
+            Ok(s) => s.to_owned(),
+            Err(_) => fallback.to_owned(),
+        }
+    }
 
-        let info_plist_path = archive_entries
+    fn safe_decoded_zip_path(name: &str) -> Option<PathBuf> {
+        if name.is_empty() || name.contains('\0') {
+            return None;
+        }
+
+        let mut out = PathBuf::new();
+
+        for part in name.split('/') {
+            if part.is_empty() {
+                continue;
+            }
+
+            match part {
+                "." | ".." => return None,
+                _ => out.push(part),
+            }
+        }
+
+        if out.components().any(|c| {
+            matches!(
+                c,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        }) {
+            return None;
+        }
+
+        Some(out)
+    }
+
+    fn find_top_level_info_plist_path(archive_entries: &[String]) -> Option<&str> {
+        archive_entries
             .iter()
             .find(|entry| {
                 entry.starts_with("Payload/")
                     && entry.ends_with("/Info.plist")
                     && entry.matches('/').count() == 2
             })
+            .map(String::as_str)
+    }
+
+    fn read_archive_entry_by_decoded_name(
+        archive_path: &Path,
+        wanted_name: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let file = fs::File::open(archive_path)?;
+        let mut archive = ZipArchive::new(file)?;
+
+        for i in 0..archive.len() {
+            let mut entry = archive.by_index(i)?;
+            let decoded_name = Self::decoded_zip_name_raw(entry.name_raw(), entry.name());
+
+            if decoded_name == wanted_name {
+                let mut data = Vec::new();
+                entry.read_to_end(&mut data)?;
+                return Ok(data);
+            }
+        }
+
+        Err(Error::PackageInfoPlistMissing)
+    }
+
+    fn get_info_plist_from_archive(
+        archive_path: &Path,
+        archive_entries: &[String],
+    ) -> Result<Dictionary, Error> {
+        let info_plist_path = Self::find_top_level_info_plist_path(archive_entries)
             .ok_or(Error::PackageInfoPlistMissing)?;
 
-        let mut plist_file = archive.by_name(info_plist_path)?;
-        let mut plist_data = Vec::new();
-        plist_file.read_to_end(&mut plist_data)?;
-
+        let plist_data = Self::read_archive_entry_by_decoded_name(archive_path, info_plist_path)?;
         Ok(plist::from_bytes(&plist_data)?)
     }
 
     fn extract_icon_from_archive(
-        archive_path: &PathBuf,
+        archive_path: &Path,
         archive_entries: &[String],
         plist: &Dictionary,
     ) -> Option<Vec<u8>> {
-        // Collects all candidate icon base names from the plist, in order of preference.
-        // CFBundleIcons (iPhone) takes priority, fall back to CFBundleIcons~ipad, then
-        // top-level CFBundleIconFiles.
         let mut icon_names: Vec<String> = Vec::new();
 
         let primary_from = |d: &Dictionary| -> Vec<String> {
@@ -107,6 +169,7 @@ impl Package {
         if let Some(d) = plist.get("CFBundleIcons").and_then(|v| v.as_dictionary()) {
             icon_names.extend(primary_from(d));
         }
+
         if let Some(d) = plist
             .get("CFBundleIcons~ipad")
             .and_then(|v| v.as_dictionary())
@@ -117,6 +180,7 @@ impl Package {
                 }
             }
         }
+
         if let Some(arr) = plist.get("CFBundleIconFiles").and_then(|v| v.as_array()) {
             for n in arr
                 .iter()
@@ -133,14 +197,9 @@ impl Package {
             return None;
         }
 
-        let app_prefix = archive_entries
-            .iter()
-            .find(|e| {
-                e.starts_with("Payload/")
-                    && e.ends_with("/Info.plist")
-                    && e.matches('/').count() == 2
-            })?
-            .trim_end_matches("/Info.plist");
+        let app_prefix = Self::find_top_level_info_plist_path(archive_entries)?
+            .trim_end_matches("/Info.plist")
+            .to_string();
 
         let file = fs::File::open(archive_path).ok()?;
         let mut archive = ZipArchive::new(file).ok()?;
@@ -150,10 +209,17 @@ impl Package {
         for name in &icon_names {
             for suffix in &suffixes {
                 let candidate = format!("{app_prefix}/{name}{suffix}");
-                if let Ok(mut entry) = archive.by_name(&candidate) {
-                    let mut data = Vec::new();
-                    if entry.read_to_end(&mut data).is_ok() && !data.is_empty() {
-                        return Some(cgbi::normalize(data));
+
+                for i in 0..archive.len() {
+                    let mut entry = archive.by_index(i).ok()?;
+                    let decoded_name =
+                        Self::decoded_zip_name_raw(entry.name_raw(), entry.name());
+
+                    if decoded_name == candidate {
+                        let mut data = Vec::new();
+                        if entry.read_to_end(&mut data).is_ok() && !data.is_empty() {
+                            return Some(cgbi::normalize(data));
+                        }
                     }
                 }
             }
@@ -165,13 +231,37 @@ impl Package {
     pub fn get_package_bundle(&self) -> Result<Bundle, Error> {
         let file = fs::File::open(&self.package_file)?;
         let mut archive = ZipArchive::new(file)?;
-        archive.extract(&self.stage_dir)?;
+
+        for i in 0..archive.len() {
+            let mut entry = archive.by_index(i)?;
+            let decoded_name = Self::decoded_zip_name_raw(entry.name_raw(), entry.name());
+
+            let rel_path = match Self::safe_decoded_zip_path(&decoded_name) {
+                Some(p) => p,
+                None => continue,
+            };
+
+            let out_path = self.stage_dir.join(rel_path);
+
+            if entry.is_dir() || decoded_name.ends_with('/') {
+                fs::create_dir_all(&out_path)?;
+                continue;
+            }
+
+            if let Some(parent) = out_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+
+            let mut out_file = fs::File::create(&out_path)?;
+            std::io::copy(&mut entry, &mut out_file)?;
+            out_file.flush()?;
+        }
 
         let app_dir = fs::read_dir(&self.stage_payload_dir)?
             .filter_map(Result::ok)
             .map(|e| e.path())
             .find(|p| p.is_dir() && p.extension().and_then(|e| e.to_str()) == Some("app"))
-            .ok_or_else(|| Error::PackageInfoPlistMissing)?;
+            .ok_or(Error::PackageInfoPlistMissing)?;
 
         Ok(Bundle::new(app_dir)?)
     }
@@ -184,38 +274,60 @@ impl Package {
         }
     }
 
+    fn path_to_zip_name(path: &Path, prefix: &Path) -> Result<String, Error> {
+        let rel = path
+            .strip_prefix(prefix)
+            .map_err(|_| Error::PackageInfoPlistMissing)?;
+
+        let mut parts: Vec<String> = Vec::new();
+        for comp in rel.components() {
+            match comp {
+                Component::Normal(s) => {
+                    let text = s.to_string_lossy().into_owned();
+                    parts.push(text);
+                }
+                Component::CurDir => {}
+                _ => return Err(Error::PackageInfoPlistMissing),
+            }
+        }
+
+        Ok(parts.join("/"))
+    }
+
     fn archive_package_bundle(self) -> Result<PathBuf, Error> {
         let zip_file_path = self.stage_dir.join("resigned.ipa");
         let file = fs::File::create(&zip_file_path)?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+        let options =
+            FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         let payload_dir = self.stage_payload_dir;
 
         fn add_dir_to_zip(
             zip: &mut zip::ZipWriter<fs::File>,
-            path: &PathBuf,
-            prefix: &PathBuf,
+            path: &Path,
+            prefix: &Path,
             options: &FileOptions<'_, zip::write::ExtendedFileOptions>,
         ) -> Result<(), Error> {
             for entry in fs::read_dir(path)? {
                 let entry = entry?;
                 let entry_path = entry.path();
-                let name = entry_path
-                    .strip_prefix(prefix)
-                    .map_err(|_| Error::PackageInfoPlistMissing)?
-                    .to_string_lossy()
-                    .to_string();
+                let mut name = Package::path_to_zip_name(&entry_path, prefix)?;
 
-                if entry_path.is_file() {
+                if entry_path.is_dir() {
+                    if !name.ends_with('/') {
+                        name.push('/');
+                    }
+                    zip.add_directory(&name, options.clone())?;
+                    add_dir_to_zip(zip, &entry_path, prefix, options)?;
+                } else if entry_path.is_file() {
                     zip.start_file(&name, options.clone())?;
                     let mut f = fs::File::open(&entry_path)?;
                     std::io::copy(&mut f, zip)?;
-                } else if entry_path.is_dir() {
-                    zip.add_directory(&name, options.clone())?;
-                    add_dir_to_zip(zip, &entry_path, prefix, options)?;
                 }
             }
+
             Ok(())
         }
 
@@ -226,11 +338,10 @@ impl Package {
     }
 
     pub fn remove_package_stage(self) {
-        fs::remove_dir_all(&self.stage_dir).ok();
+        let _ = fs::remove_dir_all(&self.stage_dir);
     }
 }
 
-// TODO: make bundle and package share a common trait for plist info access
 macro_rules! get_plist_dict_value {
     ($self:ident, $key:expr) => {{
         $self
