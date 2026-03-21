@@ -148,6 +148,28 @@ pub(crate) fn tray_menu_refresh_subscription() -> Subscription<Message> {
     })
 }
 
+pub(crate) fn certificate_reset_subscription() -> Subscription<Message> {
+    Subscription::run(|| {
+        iced::stream::channel(
+            10,
+            |mut output: iced::futures::channel::mpsc::Sender<Message>| async move {
+                use iced::futures::{SinkExt, StreamExt};
+                let (tx, mut rx) = iced::futures::channel::mpsc::unbounded::<Message>();
+
+                std::thread::spawn(move || {
+                    while let Some(request) = crate::certificate_reset::wait_for_request() {
+                        let _ = tx.unbounded_send(Message::CertificateResetRequested(request));
+                    }
+                });
+
+                while let Some(message) = rx.next().await {
+                    let _ = output.send(message).await;
+                }
+            },
+        )
+    })
+}
+
 #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
 pub(crate) fn relaunch_subscription() -> Subscription<Message> {
     Subscription::run(|| {
@@ -309,12 +331,17 @@ pub(crate) async fn run_installation(
                 team_id
             };
 
+            let mut on_certificate_reset = || {
+                send(crate::certificate_reset::WARNING.to_string(), 20);
+                crate::certificate_reset::confirm()
+            };
             let identity = CertificateIdentity::new_with_session(
                 &session,
                 crate::defaults::get_data_path(),
                 None,
                 team_id,
                 false,
+                Some(&mut on_certificate_reset),
             )
             .await
             .map_err(|e| e.to_string())?;
@@ -569,12 +596,14 @@ pub(crate) async fn export_certificate(account: plume_store::GsaAccount) -> Resu
         team_id
     };
 
+    let mut on_certificate_reset = crate::certificate_reset::confirm;
     let identity = CertificateIdentity::new_with_session(
         &session,
         crate::defaults::get_data_path(),
         None,
         team_id,
         true,
+        Some(&mut on_certificate_reset),
     )
     .await
     .map_err(|e| e.to_string())?;
