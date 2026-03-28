@@ -155,7 +155,9 @@ impl Impactor {
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        false,
+                    )));
                 }
 
                 Task::none()
@@ -179,7 +181,9 @@ impl Impactor {
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        false,
+                    )));
                 }
 
                 Task::none()
@@ -207,7 +211,9 @@ impl Impactor {
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        false,
+                    )));
                 }
 
                 Task::none()
@@ -225,7 +231,9 @@ impl Impactor {
                 self.navigate_to_screen(screen_type.clone());
 
                 if screen_type == ImpactorScreenType::Utilities {
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        false,
+                    )));
                 }
 
                 Task::none()
@@ -388,7 +396,7 @@ impl Impactor {
                             utilties::UtilitiesScreen::new(self.selected_device.clone()),
                         );
                         return Task::done(Message::UtilitiesScreen(
-                            utilties::Message::RefreshApps,
+                            utilties::Message::RefreshApps(false),
                         ));
                     }
 

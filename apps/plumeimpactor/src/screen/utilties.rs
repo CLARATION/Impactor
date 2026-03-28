@@ -1,4 +1,4 @@
-use iced::widget::{button, column, container, row, rule, scrollable, text};
+use iced::widget::{button, column, container, row, rule, scrollable, text, toggler};
 use iced::{Center, Color, Element, Task};
 
 use crate::appearance;
@@ -37,12 +37,13 @@ impl StatusMessage {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    RefreshApps,
+    RefreshApps(bool),
     AppsLoaded(Result<Vec<SignerAppReal>, String>),
     InstallPairingFile(SignerAppReal),
     Trust,
     PairResult(Result<(), String>),
     InstallPairingResult(String, Result<(), String>),
+    ToggleRPPairing(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +54,7 @@ pub struct UtilitiesScreen {
     app_statuses: HashMap<String, StatusMessage>,
     loading: bool,
     trust_loading: bool,
+    rppairing_enabled: bool,
 }
 
 impl UtilitiesScreen {
@@ -64,6 +66,7 @@ impl UtilitiesScreen {
             app_statuses: HashMap::new(),
             loading: false,
             trust_loading: false,
+            rppairing_enabled: true,
         };
 
         if screen.device.as_ref().map(|d| d.is_mac).unwrap_or(false) {
@@ -75,7 +78,7 @@ impl UtilitiesScreen {
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::RefreshApps => {
+            Message::RefreshApps(supports_remote_pairing) => {
                 self.loading = true;
                 self.status_message = None;
                 self.app_statuses.clear();
@@ -91,7 +94,7 @@ impl UtilitiesScreen {
                         let rt = tokio::runtime::Runtime::new().unwrap();
                         let result = rt.block_on(async move {
                             device
-                                .installed_apps()
+                                .installed_apps(supports_remote_pairing)
                                 .await
                                 .map_err(|e| format!("Failed to load apps: {}", e))
                         });
@@ -215,6 +218,10 @@ impl UtilitiesScreen {
                 self.app_statuses.insert(app_key, status);
                 Task::none()
             }
+            Message::ToggleRPPairing(enabled) => {
+                self.rppairing_enabled = enabled;
+                Task::perform(async move { Message::RefreshApps(enabled) }, |msg| msg)
+            }
         }
     }
 
@@ -265,7 +272,7 @@ impl UtilitiesScreen {
                         .on_press_maybe(if self.loading {
                             None
                         } else {
-                            Some(Message::RefreshApps)
+                            Some(Message::RefreshApps(self.rppairing_enabled))
                         })
                         .style(appearance::s_button)
                         .width(iced::Length::Fill),
@@ -273,6 +280,12 @@ impl UtilitiesScreen {
                 .spacing(appearance::THEME_PADDING),
             );
         }
+
+        let toggle = toggler(self.rppairing_enabled)
+            .label("Use Remote Pairing")
+            .on_toggle(Message::ToggleRPPairing);
+
+        content = content.push(toggle);
 
         if !self.installed_apps.is_empty() {
             content = content
