@@ -2,6 +2,7 @@ use iced::widget::{button, column, container, row, rule, scrollable, text, toggl
 use iced::{Center, Color, Element, Task};
 
 use crate::appearance;
+use crate::defaults::get_data_path;
 use plume_utils::{Device, SignerAppReal};
 use std::collections::HashMap;
 
@@ -138,13 +139,28 @@ impl UtilitiesScreen {
                     let app_key = Self::app_key(&app);
                     let (tx, rx) = std::sync::mpsc::sync_channel(1);
 
+                    let rppairing_enabled = self.rppairing_enabled;
+
                     std::thread::spawn(move || {
                         let rt = tokio::runtime::Runtime::new().unwrap();
                         let result = rt.block_on(async move {
-                            device
-                                .install_pairing_record(&bundle_id, &pairing_path)
-                                .await
-                                .map_err(|e| format!("Failed to install pairing record: {}", e))
+                            if rppairing_enabled {
+                                device
+                                    .install_remote_pairing_record(
+                                        &bundle_id,
+                                        &pairing_path,
+                                        get_data_path(),
+                                    )
+                                    .await
+                                    .map_err(|e| {
+                                        format!("Failed to install remote pairing record: {}", e)
+                                    })
+                            } else {
+                                device
+                                    .install_pairing_record(&bundle_id, &pairing_path)
+                                    .await
+                                    .map_err(|e| format!("Failed to install pairing record: {}", e))
+                            }
                         });
                         let _ = tx.send(result);
                     });

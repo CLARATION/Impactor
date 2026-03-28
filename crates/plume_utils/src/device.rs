@@ -5,6 +5,7 @@ use idevice::core_device_proxy::CoreDeviceProxy;
 use idevice::installation_proxy::InstallationProxyClient;
 use idevice::lockdown::LockdownClient;
 use idevice::misagent::MisagentClient;
+use idevice::provider::UsbmuxdProvider;
 use idevice::remote_pairing::{RemotePairingClient, RpPairingFile};
 use idevice::rsd::RsdHandshake;
 use idevice::usbmuxd::{Connection, UsbmuxdAddr, UsbmuxdDevice};
@@ -22,7 +23,6 @@ use plist::Value;
 pub const CONNECTION_LABEL: &str = "plume_info";
 pub const INSTALLATION_LABEL: &str = "plume_install";
 pub const HOUSE_ARREST_LABEL: &str = "plume_house_arrest";
-pub const CORE_DEVICE_LABEL: &str = "plume_coredevice";
 
 macro_rules! get_dict_string {
     ($dict:expr, $key:expr) => {
@@ -231,41 +231,112 @@ impl Device {
         &self,
         identifier: &String,
         path: &str,
-        path_on_system: &str,
+        path_to_store: PathBuf,
     ) -> Result<(), Error> {
+        if self.usbmuxd_device.is_none() {
+            return Err(Error::Other("Device is not connected via USB".to_string()));
+        }
+
         let provider = self
             .usbmuxd_device
             .clone()
             .unwrap()
-            .to_provider(UsbmuxdAddr::default(), CORE_DEVICE_LABEL);
+            .to_provider(UsbmuxdAddr::default(), HOUSE_ARREST_LABEL);
 
-        let cdp = CoreDeviceProxy::connect(&provider).await?;
-        let cdp_port = cdp.tunnel_info().server_rsd_port;
-        let cdp_adapter = cdp.create_software_tunnel()?;
-        let mut cdp_adapter = cdp_adapter.to_async_handle();
+        let pairing_file = self.get_rsd_pairing_file(&provider, path_to_store).await?;
 
-        let cdp_stream = cdp_adapter.connect(cdp_port).await?;
-        let cdp_handshake = RsdHandshake::new(cdp_stream).await?;
+        let hc = HouseArrestClient::connect(&provider).await?;
+        let mut ac = hc.vend_documents(identifier.clone()).await?;
+        if let Some(parent) = Path::new(path).parent() {
+            let mut current = String::new();
+            let has_root = parent.has_root();
 
-        let tunnel_service = cdp_handshake
-            .services
-            .get("com.apple.internal.dt.coredevice.untrusted.tunnelservice")
-            .ok_or_else(|| Error::Other("Tunnel service not found".to_string()))?;
+            for component in parent.components() {
+                if let Component::Normal(dir) = component {
+                    if has_root && current.is_empty() {
+                        current.push('/');
+                    } else if !current.is_empty() && !current.ends_with('/') {
+                        current.push('/');
+                    }
 
-        let tunnel_service_stream = cdp_adapter.connect(tunnel_service.port).await?;
-        let mut remote_xpc = RemoteXpcClient::new(tunnel_service_stream).await?;
-        remote_xpc.do_handshake().await?;
-        let _ = remote_xpc.recv_root().await;
+                    current.push_str(&dir.to_string_lossy());
+                    ac.mk_dir(&current).await?;
+                }
+            }
+        }
 
-        let mut pairing_file = RpPairingFile::generate("plume");
-        let mut pairing_client = RemotePairingClient::new(remote_xpc, "plume", &mut pairing_file);
-        pairing_client
-            .connect(async |_| "000000".to_string(), ())
-            .await?;
+        log::info!("Created necessary directories, writing pairing file...");
 
-        pairing_file.write_to_file(path_on_system).await?;
+        let mut f = ac.open(path, AfcFopenMode::Wr).await?;
+        f.write_entire(&pairing_file.to_bytes()).await?;
 
         Ok(())
+    }
+
+    async fn get_rsd_pairing_file(
+        &self,
+        provider: &UsbmuxdProvider,
+        path: PathBuf,
+    ) -> Result<RpPairingFile, Error> {
+        let pairing_file_path = path.join(format!("plume_{}.plist", self.udid));
+
+        if pairing_file_path.exists() {
+            return RpPairingFile::read_from_file(pairing_file_path)
+                .await
+                .map_err(|e| Error::Other(format!("Failed to read existing pairing file: {}", e)));
+        } else {
+            log::info!("Generating new pairing file using CoreDeviceProxy...");
+
+            let cdp = CoreDeviceProxy::connect(provider).await?;
+            let cdp_port = cdp.tunnel_info().server_rsd_port;
+            let cdp_adapter = cdp.create_software_tunnel()?;
+            let mut cdp_adapter = cdp_adapter.to_async_handle();
+
+            let cdp_stream = cdp_adapter.connect(cdp_port).await?;
+            let cdp_handshake = RsdHandshake::new(cdp_stream).await?;
+
+            let tunnel_service = cdp_handshake
+                .services
+                .get("com.apple.internal.dt.coredevice.untrusted.tunnelservice")
+                .ok_or_else(|| Error::Other("Tunnel service not found".to_string()))?;
+
+            log::info!("Connecting to tunnel service...");
+
+            let tunnel_service_stream = cdp_adapter.connect(tunnel_service.port).await?;
+            let mut remote_xpc = RemoteXpcClient::new(tunnel_service_stream).await?;
+            remote_xpc.do_handshake().await?;
+            let _ = remote_xpc.recv_root().await;
+
+            log::info!("Connected to tunnel service, generating pairing file...");
+
+            let suffix: String = uuid::Uuid::new_v4()
+                .simple()
+                .to_string()
+                .chars()
+                .take(6)
+                .collect();
+
+            let hostname = format!("plume-{}", suffix);
+
+            let mut pairing_file = RpPairingFile::generate(&hostname);
+            let mut pairing_client =
+                RemotePairingClient::new(remote_xpc, &hostname, &mut pairing_file);
+            pairing_client
+                .connect(async |_| "000000".to_string(), ())
+                .await?;
+
+            log::info!("Pairing file generated successfully, saving to device...");
+
+            let pairing_file_bytes = pairing_file.to_bytes();
+            log::info!(
+                "Pairing file serialized, writing to {} with {:?} bytes",
+                pairing_file_path.display(),
+                pairing_file_bytes
+            );
+            tokio::fs::write(&pairing_file_path, &pairing_file_bytes).await?;
+
+            Ok(pairing_file)
+        }
     }
 
     pub async fn install_app<F, Fut>(
