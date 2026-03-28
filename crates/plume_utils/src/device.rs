@@ -110,8 +110,6 @@ impl Device {
             }
         }
 
-        println!("Found {} installed apps", found_apps.len());
-
         Ok(found_apps)
     }
 
