@@ -100,11 +100,11 @@ impl Signer {
                         .collect::<Vec<_>>();
 
                     let id_key = match self.options.app {
-                        SignerApp::StikStore | SignerApp::StikStore2 => "MachineID",
+                        SignerApp::StikStore => "MachineID",
                         _ => "ALTCertificateID",
                     };
                     let cert_file_name = match self.options.app {
-                        SignerApp::StikStore | SignerApp::StikStore2 => "Certificate.p12",
+                        SignerApp::StikStore => "Certificate.p12",
                         _ => "ALTCertificate.p12",
                     };
 
