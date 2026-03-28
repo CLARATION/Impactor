@@ -1,12 +1,15 @@
 use std::fmt;
 use std::path::{Component, Path, PathBuf};
 
-use idevice::IdeviceService;
+use idevice::core_device_proxy::CoreDeviceProxy;
 use idevice::installation_proxy::InstallationProxyClient;
 use idevice::lockdown::LockdownClient;
 use idevice::misagent::MisagentClient;
+use idevice::remote_pairing::{RemotePairingClient, RpPairingFile};
+use idevice::rsd::RsdHandshake;
 use idevice::usbmuxd::{Connection, UsbmuxdAddr, UsbmuxdDevice};
 use idevice::utils::installation;
+use idevice::{IdeviceService, RemoteXpcClient};
 use plume_core::MobileProvision;
 
 use crate::Error;
@@ -19,6 +22,7 @@ use plist::Value;
 pub const CONNECTION_LABEL: &str = "plume_info";
 pub const INSTALLATION_LABEL: &str = "plume_install";
 pub const HOUSE_ARREST_LABEL: &str = "plume_house_arrest";
+pub const CORE_DEVICE_LABEL: &str = "plume_coredevice";
 
 macro_rules! get_dict_string {
     ($dict:expr, $key:expr) => {
@@ -206,6 +210,47 @@ impl Device {
 
         let mut f = ac.open(path, AfcFopenMode::Wr).await?;
         f.write_entire(&pairing_file.serialize().unwrap()).await?;
+
+        Ok(())
+    }
+
+    pub async fn install_remote_pairing_record(
+        &self,
+        identifier: &String,
+        path: &str,
+        path_on_system: &str,
+    ) -> Result<(), Error> {
+        let provider = self
+            .usbmuxd_device
+            .clone()
+            .unwrap()
+            .to_provider(UsbmuxdAddr::default(), CORE_DEVICE_LABEL);
+
+        let cdp = CoreDeviceProxy::connect(&provider).await?;
+        let cdp_port = cdp.tunnel_info().server_rsd_port;
+        let cdp_adapter = cdp.create_software_tunnel()?;
+        let mut cdp_adapter = cdp_adapter.to_async_handle();
+
+        let cdp_stream = cdp_adapter.connect(cdp_port).await?;
+        let cdp_handshake = RsdHandshake::new(cdp_stream).await?;
+
+        let tunnel_service = cdp_handshake
+            .services
+            .get("com.apple.internal.dt.coredevice.untrusted.tunnelservice")
+            .ok_or_else(|| Error::Other("Tunnel service not found".to_string()))?;
+
+        let tunnel_service_stream = cdp_adapter.connect(tunnel_service.port).await?;
+        let mut remote_xpc = RemoteXpcClient::new(tunnel_service_stream).await?;
+        remote_xpc.do_handshake().await?;
+        let _ = remote_xpc.recv_root().await;
+
+        let mut pairing_file = RpPairingFile::generate("plume");
+        let mut pairing_client = RemotePairingClient::new(remote_xpc, "plume", &mut pairing_file);
+        pairing_client
+            .connect(async |_| "000000".to_string(), ())
+            .await?;
+
+        pairing_file.write_to_file(path_on_system).await?;
 
         Ok(())
     }
