@@ -276,6 +276,11 @@ impl SignerApp {
         !matches!(self, Default | AltStore)
     }
 
+    pub fn supports_rsd(&self) -> bool {
+        use SignerApp::*;
+        matches!(self, StikDebug | Feather | Protokolle | Antrag)
+    }
+
     pub fn pairing_file_path(&self) -> Option<&'static str> {
         use SignerApp::*;
         match self {

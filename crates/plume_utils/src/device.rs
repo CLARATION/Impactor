@@ -144,7 +144,7 @@ impl Device {
         let mut lc = LockdownClient::connect(&provider).await?;
         let id = uuid::Uuid::new_v4().to_string().to_uppercase();
         let buid = usbmuxd.get_buid().await?;
-        let mut pairing_file = lc.pair(id, buid).await?;
+        let mut pairing_file = lc.pair(id, buid, None).await?;
         pairing_file.udid = Some(self.udid.clone());
         let pairing_file = pairing_file.serialize()?;
 
