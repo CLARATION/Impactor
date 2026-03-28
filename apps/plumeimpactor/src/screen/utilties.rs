@@ -54,7 +54,7 @@ pub struct UtilitiesScreen {
     app_statuses: HashMap<String, StatusMessage>,
     loading: bool,
     trust_loading: bool,
-    rppairing_enabled: bool,
+    pub rppairing_enabled: bool,
 }
 
 impl UtilitiesScreen {
@@ -66,7 +66,7 @@ impl UtilitiesScreen {
             app_statuses: HashMap::new(),
             loading: false,
             trust_loading: false,
-            rppairing_enabled: true,
+            rppairing_enabled: false,
         };
 
         if screen.device.as_ref().map(|d| d.is_mac).unwrap_or(false) {

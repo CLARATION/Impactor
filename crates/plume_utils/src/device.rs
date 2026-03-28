@@ -95,12 +95,22 @@ impl Device {
                 app_name.as_deref(),
             );
 
-            if supports_remote_pairing && signer_app.app.supports_rsd() {
-                found_apps.push(signer_app);
-            } else if signer_app.app.supports_pairing_file_alt() {
+            let should_include = if supports_remote_pairing {
+                signer_app.app.supports_rsd()
+            } else {
+                signer_app.app.supports_pairing_file_alt()
+            };
+
+            if should_include
+                && !found_apps
+                    .iter()
+                    .any(|a: &SignerAppReal| a.bundle_id == signer_app.bundle_id)
+            {
                 found_apps.push(signer_app);
             }
         }
+
+        println!("Found {} installed apps", found_apps.len());
 
         Ok(found_apps)
     }
