@@ -17,10 +17,10 @@ serde.workspace = true
 serde_json.workspace = true
 rustls.workspace = true
 # Core dependencies
-reqwest = { version = "0.11.14", default-features = false, features = [
+reqwest = { version = "0.13.0", default-features = false, features = [
     "blocking",
     "json",
-    "rustls-tls",
+    "rustls",
 ] }
 regex = "1.11.2"
 base64 = "0.22"

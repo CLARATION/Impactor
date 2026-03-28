@@ -171,10 +171,16 @@ impl Impactor {
                     .cloned();
 
                 if let ImpactorScreen::Utilities(_) = self.current_screen {
+                    let rppairing_enabled = match &self.current_screen {
+                        ImpactorScreen::Utilities(screen) => screen.rppairing_enabled,
+                        _ => false,
+                    };
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        rppairing_enabled,
+                    )));
                 }
 
                 Task::none()
@@ -195,10 +201,16 @@ impl Impactor {
                 }
 
                 if let ImpactorScreen::Utilities(_) = self.current_screen {
+                    let rppairing_enabled = match &self.current_screen {
+                        ImpactorScreen::Utilities(screen) => screen.rppairing_enabled,
+                        _ => false,
+                    };
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        rppairing_enabled,
+                    )));
                 }
 
                 Task::none()
@@ -223,10 +235,16 @@ impl Impactor {
                 }
 
                 if let ImpactorScreen::Utilities(_) = self.current_screen {
+                    let rppairing_enabled = match &self.current_screen {
+                        ImpactorScreen::Utilities(screen) => screen.rppairing_enabled,
+                        _ => false,
+                    };
                     self.current_screen = ImpactorScreen::Utilities(
                         utilties::UtilitiesScreen::new(self.selected_device.clone()),
                     );
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        rppairing_enabled,
+                    )));
                 }
 
                 Task::none()
@@ -244,7 +262,13 @@ impl Impactor {
                 self.navigate_to_screen(screen_type.clone());
 
                 if screen_type == ImpactorScreenType::Utilities {
-                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps));
+                    let rppairing_enabled = match &self.current_screen {
+                        ImpactorScreen::Utilities(screen) => screen.rppairing_enabled,
+                        _ => false,
+                    };
+                    return Task::done(Message::UtilitiesScreen(utilties::Message::RefreshApps(
+                        rppairing_enabled,
+                    )));
                 }
 
                 Task::none()
@@ -420,11 +444,15 @@ impl Impactor {
                             package::PackageScreen::new(Some(package), options),
                         );
                     } else if let general::Message::NavigateToUtilities = msg {
+                        let rppairing_enabled = match &self.current_screen {
+                            ImpactorScreen::Utilities(screen) => screen.rppairing_enabled,
+                            _ => false,
+                        };
                         self.current_screen = ImpactorScreen::Utilities(
                             utilties::UtilitiesScreen::new(self.selected_device.clone()),
                         );
                         return Task::done(Message::UtilitiesScreen(
-                            utilties::Message::RefreshApps,
+                            utilties::Message::RefreshApps(rppairing_enabled),
                         ));
                     }
 

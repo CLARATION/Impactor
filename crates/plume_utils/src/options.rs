@@ -167,7 +167,6 @@ pub enum SignerApp {
     EnsWilde,
     ByeTunes,
     StikStore,
-    StikStore2,
 }
 
 impl std::fmt::Display for SignerApp {
@@ -185,7 +184,7 @@ impl std::fmt::Display for SignerApp {
             SparseBox => "SparseBox",
             EnsWilde => "EnsWilde",
             ByeTunes => "ByeTunes",
-            StikStore | StikStore2 => "StikStore",
+            StikStore => "StikStore",
         };
         write!(f, "{}", name)
     }
@@ -210,7 +209,7 @@ impl SignerApp {
             ("com.yangjiii.EnsWilde", SignerApp::EnsWilde),
             ("com.EduAlexxis.MusicManager", SignerApp::ByeTunes),
             ("me.stik.store", SignerApp::StikStore),
-            ("app.stik.store", SignerApp::StikStore2),
+            ("app.stik.store", SignerApp::StikStore),
         ];
 
         for &(known_id, app) in KNOWN_APPS {
@@ -254,7 +253,6 @@ impl SignerApp {
             ("enswilde", SignerApp::EnsWilde),
             ("byetunes", SignerApp::ByeTunes),
             ("stikstore", SignerApp::StikStore),
-            ("stikstore", SignerApp::StikStore2),
         ];
 
         for &(needle, app) in KNOWN_APP_NAMES {
@@ -276,11 +274,17 @@ impl SignerApp {
         !matches!(self, Default | AltStore)
     }
 
+    pub fn supports_rsd(&self) -> bool {
+        use SignerApp::*;
+        matches!(self, StikDebug | Feather | Protokolle | Antrag)
+    }
+
     pub fn pairing_file_path(&self) -> Option<&'static str> {
         use SignerApp::*;
         match self {
-            Antrag | Feather | Protokolle | StikDebug | SparseBox | EnsWilde | StikStore
-            | StikStore2 => Some("/Documents/pairingFile.plist"),
+            Antrag | Feather | Protokolle | StikDebug | SparseBox | EnsWilde | StikStore => {
+                Some("/Documents/pairingFile.plist")
+            }
             SideStore => Some("/Documents/ALTPairingFile.mobiledevicepairing"),
             LiveContainerAndSideStore | LiveContainer => {
                 Some("/Documents/SideStore/Documents/ALTPairingFile.mobiledevicepairing")
