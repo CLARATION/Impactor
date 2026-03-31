@@ -265,8 +265,6 @@ impl Device {
             }
         }
 
-        log::info!("Created necessary directories, writing pairing file...");
-
         let mut f = ac.open(path, AfcFopenMode::Wr).await?;
         f.write_entire(&pairing_file.to_bytes()).await?;
 
@@ -281,12 +279,8 @@ impl Device {
         let pairing_file_path = path.join(format!("plume_{}.plist", self.udid));
 
         if pairing_file_path.exists() {
-            return RpPairingFile::read_from_file(pairing_file_path)
-                .await
-                .map_err(|e| Error::Other(format!("Failed to read existing pairing file: {}", e)));
+            return Ok(RpPairingFile::read_from_file(pairing_file_path).await?);
         } else {
-            log::info!("Generating new pairing file using CoreDeviceProxy...");
-
             let cdp = CoreDeviceProxy::connect(provider).await?;
             let cdp_port = cdp.tunnel_info().server_rsd_port;
             let cdp_adapter = cdp.create_software_tunnel()?;
@@ -300,14 +294,10 @@ impl Device {
                 .get("com.apple.internal.dt.coredevice.untrusted.tunnelservice")
                 .ok_or_else(|| Error::Other("Tunnel service not found".to_string()))?;
 
-            log::info!("Connecting to tunnel service...");
-
             let tunnel_service_stream = cdp_adapter.connect(tunnel_service.port).await?;
             let mut remote_xpc = RemoteXpcClient::new(tunnel_service_stream).await?;
             remote_xpc.do_handshake().await?;
             let _ = remote_xpc.recv_root().await;
-
-            log::info!("Connected to tunnel service, generating pairing file...");
 
             let suffix: String = uuid::Uuid::new_v4()
                 .simple()
@@ -325,14 +315,8 @@ impl Device {
                 .connect(async |_| "000000".to_string(), ())
                 .await?;
 
-            log::info!("Pairing file generated successfully, saving to device...");
-
             let pairing_file_bytes = pairing_file.to_bytes();
-            log::info!(
-                "Pairing file serialized, writing to {} with {:?} bytes",
-                pairing_file_path.display(),
-                pairing_file_bytes
-            );
+
             tokio::fs::write(&pairing_file_path, &pairing_file_bytes).await?;
 
             Ok(pairing_file)
