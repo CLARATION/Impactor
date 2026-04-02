@@ -22,14 +22,14 @@ plume_core = { path = "../../crates/plume_core", features = ["tweaks"] }
 plume_utils = { path = "../../crates/plume_utils" }
 plume_store = { path = "../../crates/plume_store" }
 
-iced = { version = "0.14.0", features = ["image-without-codecs", "advanced"] }
-wgpu = "27.0.1"                                                                 # Power references
-tray-icon = { version = "0.21.2", default-features = false }                    # System tray icon
-rfd = "0.16.0"                                                                  # File dialogs
-open = "5.3.3"                                                                  # Opening links (I know, useless)
-notify-rust = "4.11.7"                                                          # Notifications
-single-instance = "0.3.3"                                                       # Ensuring single instance of the app on Linux and Windows
-auto-launcher = "0.6.1"                                                         # Auto-launching on startup
+iced = { version = "0.14", features = ["image-without-codecs", "advanced"] }
+wgpu = { version = "27.0", default-features = false, features = ["std"] }     # Power references
+tray-icon = { version = "0.21", default-features = false }                    # System tray icon
+rfd = "0.16"                                                                  # File dialogs
+open = "5.3"                                                                  # Opening links (I know, useless)
+notify-rust = "4.11"                                                          # Notifications
+single-instance = "0.3"                                                       # Ensuring single instance of the app on Linux and Windows
+auto-launcher = "0.6"                                                         # Auto-launching on startup
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plume_gestalt = { path = "../../crates/plume_gestalt" }

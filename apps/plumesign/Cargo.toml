@@ -14,14 +14,14 @@ futures.workspace = true
 env_logger.workspace = true
 log.workspace = true
 rustls.workspace = true
+goblin.workspace = true
 plume_core = { path = "../../crates/plume_core", features = ["tweaks"] }
 plume_utils = { path = "../../crates/plume_utils" }
 plume_store = { path = "../../crates/plume_store" }
 
-clap = { version = "4.5", features = ["derive"] }
-dialoguer = "0.12.0"
+clap = { version = "4.5", default-features = false, features = ["std", "derive"] }
+dialoguer = "0.12"
 anyhow = "1.0"
-goblin = "0.9.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plume_gestalt = { path = "../../crates/plume_gestalt" }
