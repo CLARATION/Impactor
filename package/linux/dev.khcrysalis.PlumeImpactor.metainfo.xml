@@ -14,12 +14,12 @@
     <control>keyboard</control>
     <control>touch</control>
   </supports>
-  <url type="bugtracker">https://github.com/khcrysalis/PlumeImpactor/issues</url>
-  <url type="contact">https://github.com/khcrysalis/PlumeImpactor/issues</url>
-  <url type="homepage">https://github.com/khcrysalis/PlumeImpactor</url>
-  <url type="donation">https://github.com/sponsors/khcrysalis</url>
-  <url type="vcs-browser">https://github.com/khcrysalis/PlumeImpactor</url>
-  <url type="contribute">https://github.com/khcrysalis/PlumeImpactor</url>
+  <url type="bugtracker">https://github.com/claration/Impactor/issues</url>
+  <url type="contact">https://github.com/claration/Impactor/issues</url>
+  <url type="homepage">https://github.com/claration/Impactor</url>
+  <url type="donation">https://github.com/sponsors/claration</url>
+  <url type="vcs-browser">https://github.com/claration/Impactor</url>
+  <url type="contribute">https://github.com/claration/Impactor</url>
   <description>
     <p>
       This app requires the <code>usbmuxd</code> package to be installed through your system's package manager. For most popular distributions of Linux, it should already be installed and running.
@@ -31,11 +31,11 @@
   <launchable type="desktop-id">dev.khcrysalis.PlumeImpactor.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/khcrysalis/PlumeImpactor/refs/heads/main/package/linux/screenshots/dark.png</image>
+      <image>https://raw.githubusercontent.com/claration/Impactor/refs/heads/main/package/linux/screenshots/dark.png</image>
       <caption>Screenshot of Impactor after importing an app.</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/khcrysalis/PlumeImpactor/refs/heads/main/package/linux/screenshots/light.png</image>
+      <image>https://raw.githubusercontent.com/claration/Impactor/refs/heads/main/package/linux/screenshots/light.png</image>
       <caption>Screenshot of Impactor after importing an app, in light mode.</caption>
     </screenshot>
   </screenshots>
@@ -102,7 +102,7 @@
       </description>
     </release>
     <release version="v2.0.3" date="2026-01-28">
-      <url type="details">https://github.com/khcrysalis/Impactor/releases/tag/v2.0.3</url>
+      <url type="details">https://github.com/claration/Impactor/releases/tag/v2.0.3</url>
       <description>
         <p>What's Changed</p>
         <ul>
@@ -112,7 +112,7 @@
       </description>
     </release>
     <release version="v2.0.2" date="2026-01-22">
-      <url type="details">https://github.com/khcrysalis/Impactor/releases/tag/v2.0.2</url>
+      <url type="details">https://github.com/claration/Impactor/releases/tag/v2.0.2</url>
       <description>
         <p>What's Changed</p>
         <ul>
@@ -122,7 +122,7 @@
       </description>
     </release>
     <release version="2.0.0" date="2026-1-19">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v2.0.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v2.0.0</url>
       <description>
         <p>Full rewriting using iced, many new features.</p>
         <ul>
@@ -138,7 +138,7 @@
       </description>
     </release>
     <release version="1.4.1" date="2026-1-10">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.4.1</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.4.1</url>
       <description>
         <p>New application icon, multiple bug fixes</p>
         <ul>
@@ -150,7 +150,7 @@
       </description>
     </release>
     <release version="1.4.0" date="2025-12-29">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.4.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.4.0</url>
       <description>
         <p>Older macOS support, portable windows exe and fixes</p>
         <ul>
@@ -164,7 +164,7 @@
       </description>
     </release>
     <release version="1.3.0" date="2025-12-22">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.3.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.3.0</url>
       <description>
         <p>Dark mode for Windows and more</p>
         <ul>
@@ -179,7 +179,7 @@
       </description>
     </release>
     <release version="1.2.0" date="2025-12-13">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.2.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.2.0</url>
       <description>
         <p>Liquid glass, tweak injection, adhoc signing and more</p>
         <ul>
@@ -196,7 +196,7 @@
       </description>
     </release>
     <release version="1.1.1" date="2025-12-1">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.1.1</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.1.1</url>
       <description>
         <p>Fix improper signing for some dylibs and more</p>
         <ul>
@@ -208,7 +208,7 @@
       </description>
     </release>
     <release version="1.1.0" date="2025-11-27">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.1.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.1.0</url>
       <description>
         <p>Linux arm64 support, fixed macOS logins and more</p>
         <ul>
@@ -222,7 +222,7 @@
       </description>
     </release>
     <release version="1.0.0" date="2025-11-24">
-      <url type="details">https://github.com/khcrysalis/PlumeImpactor/releases/tag/v1.0.0</url>
+      <url type="details">https://github.com/claration/PlumeImpactor/releases/tag/v1.0.0</url>
       <description>
         <p>Initial release</p>
       </description>

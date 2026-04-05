@@ -298,7 +298,7 @@ impl UtilitiesScreen {
         }
 
         let toggle = toggler(self.rppairing_enabled)
-            .label("Use Remote Pairing")
+            .label("Use Remote Pairing (17.4+)")
             .on_toggle(Message::ToggleRPPairing);
 
         content = content.push(toggle);
