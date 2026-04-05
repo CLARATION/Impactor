@@ -12,7 +12,7 @@ members = [
 [workspace.package]
 edition = "2024"
 version = "2.1.3"
-authors = ["CLARATION <s03781614@icloud.com>"]
+authors = ["CLARATION <claration@riseup.net>"]
 license = "MIT"
 repository = "https://github.com/khcrysalis/plumestore"
 
