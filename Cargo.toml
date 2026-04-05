@@ -14,7 +14,7 @@ edition = "2024"
 version = "2.1.3"
 authors = ["CLARATION <claration@riseup.net>"]
 license = "MIT"
-repository = "https://github.com/khcrysalis/plumestore"
+repository = "https://github.com/claration/Impactor"
 
 # We use `opt-level = "s"` as it significantly reduces binary size.
 # We could then use the `#[optimize(speed)]` attribute for spot optimizations.
