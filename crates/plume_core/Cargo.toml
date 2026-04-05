@@ -16,16 +16,17 @@ log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 rustls.workspace = true
+goblin.workspace = true
 # Core dependencies
-reqwest = { version = "0.13.0", default-features = false, features = [
+reqwest = { version = "0.13", default-features = false, features = [
     "blocking",
     "json",
     "rustls",
 ] }
-regex = "1.11.2"
+regex = "1.11"
 base64 = "0.22"
 hex = "0.4.3"
-rand = "0.8.5"
+rand = "0.8"
 # Cryptography
 aes = "0.9.0-rc.4"
 aes-gcm = "0.11.0-rc.3"
@@ -33,16 +34,14 @@ cbc = { version = "0.2.0-rc.3", features = ["alloc"] }
 pbkdf2 = "0.13.0-rc.9"
 hmac = "0.13.0-rc.5"
 sha2 = "0.11.0-rc.5"
-rsa = "0.9.8"
+rsa = "0.9"
 # Certificates
-x509-certificate = "0.24.0"
-pem = "3.0.5"
-pem-rfc7468 = "0.7.0"
-rcgen = "0.12.1"
-sha1 = "0.10.6"             # p12
-p12-keystore = "0.2.0"      # p12 crate only supports legacy PKCS#12
-# Apple
-goblin = "0.9.3"
+x509-certificate = "0.24"
+pem = "3.0"
+pem-rfc7468 = "0.7"
+rcgen = "0.12"
+sha1 = "0.10"               # p12
+p12-keystore = "0.2"        # p12 crate only supports legacy PKCS#12
 # Forks
 apple-codesign = { git = "https://github.com/PlumeImpactor/plume-apple-platform-rs", rev = "428b42f", package = "apple-codesign", default-features = false }
 omnisette = { git = "https://github.com/PlumeImpactor/omnisette", rev = "c5c4cf2", package = "omnisette", features = [

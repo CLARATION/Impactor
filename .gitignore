@@ -5,6 +5,7 @@
 /.flatpak-builder
 /.flatpak-out
 /shared-modules
+/.direnv
 
 *.DS_Store
 state.plist

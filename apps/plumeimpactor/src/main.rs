@@ -6,6 +6,7 @@ use crate::refresh::spawn_refresh_daemon;
 use single_instance::SingleInstance;
 
 mod appearance;
+mod certificate_reset;
 mod defaults;
 mod macos_app;
 mod refresh;

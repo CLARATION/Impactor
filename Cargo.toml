@@ -30,26 +30,27 @@ strip = "symbols"           # See split-debuginfo - allows us to drop the size b
 incremental = true          # Improves re-compile times
 
 [workspace.dependencies]
-tokio = { version = "1.43", features = ["full"] }
+tokio = { version = "1.43", features = ["rt-multi-thread"] }
 # Application
 idevice = { git = "https://github.com/PlumeImpactor/plume-idevice", rev = "9bc774a69cd259d8d6b9a01bbadfd9668bb1ec5a", default-features = false, features = [
     "full",
     "ring",
 ] }
-plist = "1.8.0"
+plist = "1.8"
 # Errors
-env_logger = "0.11.8"
-log = "0.4.28"
-thiserror = "2.0.16"
+env_logger = "0.11"
+log = "0.4"
+thiserror = "2.0"
 # Utils
-uuid = "1.18.1"
-futures = "0.3.31"
-chrono = { version = "0.4.42", features = ["serde"] }
+uuid = "1.18"
+futures = { version = "0.3", default-features = false, features = ["std"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-rustls = { version = "0.23.32", default-features = false, features = [
+rustls = { version = "0.23", default-features = false, features = [
     "std",
     "tls12",
     "ring",
 ] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+goblin = "0.9"
