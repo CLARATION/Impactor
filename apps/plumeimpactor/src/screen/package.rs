@@ -4,6 +4,7 @@ use iced::widget::{
 use iced::{Alignment, Center, Element, Fill, Task};
 use plume_utils::{Package, PlistInfoTrait, SignerInstallMode, SignerMode, SignerOptions};
 use std::path::PathBuf;
+use tiny_skia::{FillRule, Mask, Path, PathBuilder, Transform};
 
 use crate::appearance;
 
@@ -48,12 +49,12 @@ impl PackageScreen {
         let package_icon_handle = package
             .as_ref()
             .and_then(|p| p.app_icon_data.as_ref())
-            .map(|data| image::Handle::from_bytes(data.clone()));
+            .and_then(|data| icon_handle_from_bytes(data));
 
         let custom_icon_path = options.custom_icon.clone();
         let custom_icon_handle = custom_icon_path
             .as_ref()
-            .map(|path| image::Handle::from_path(path.clone()));
+            .and_then(icon_handle_from_path);
 
         Self {
             selected_package: package,
@@ -202,7 +203,7 @@ impl PackageScreen {
                 if let Some(path) = path {
                     self.options.custom_icon = Some(path.clone());
                     self.custom_icon_path = Some(path.clone());
-                    self.custom_icon_handle = Some(image::Handle::from_path(path));
+                    self.custom_icon_handle = icon_handle_from_path(&path);
                 }
 
                 Task::none()
@@ -449,22 +450,24 @@ impl PackageScreen {
             .align_y(Center);
 
         let preview: Element<'_, Message> = if let Some(handle) = &self.custom_icon_handle {
-            stack![
+            container(stack![
                 loading_indicator,
-                image(handle.clone())
-                    .width(ICON_SIZE)
-                    .height(ICON_SIZE)
-                    .border_radius(appearance::THEME_CORNER_RADIUS)
-            ]
+                image(handle.clone()).width(ICON_SIZE).height(ICON_SIZE)
+            ])
+            .width(ICON_SIZE)
+            .height(ICON_SIZE)
+            .align_x(Center)
+            .align_y(Center)
             .into()
         } else if let Some(handle) = &self.package_icon_handle {
-            stack![
+            container(stack![
                 loading_indicator,
-                image(handle.clone())
-                    .width(ICON_SIZE)
-                    .height(ICON_SIZE)
-                    .border_radius(appearance::THEME_CORNER_RADIUS)
-            ]
+                image(handle.clone()).width(ICON_SIZE).height(ICON_SIZE)
+            ])
+            .width(ICON_SIZE)
+            .height(ICON_SIZE)
+            .align_x(Center)
+            .align_y(Center)
             .into()
         } else {
             container(text("No icon").size(11))
@@ -519,4 +522,114 @@ impl PackageScreen {
             text("No tweaks added").size(12).into()
         }
     }
+}
+
+const IOS_ICON_CORNER_RADIUS_FACTOR: f32 = 0.225;
+const IOS_ICON_EDGE: f32 = 1.528_665;
+const IOS_ICON_SHOULDER: f32 = 0.631_493_8;
+const IOS_ICON_KNEE: f32 = 0.074_911_39;
+const IOS_ICON_CTRL_EDGE: f32 = 1.088_493;
+const IOS_ICON_CTRL_SHOULDER: f32 = 0.868_406_95;
+const IOS_ICON_CTRL_CURVE_OUTER: f32 = 0.372_823_83;
+const IOS_ICON_CTRL_CURVE_INNER: f32 = 0.169_059_56;
+
+fn icon_handle_from_bytes(data: &[u8]) -> Option<image::Handle> {
+    icon_handle_from_image(::image::load_from_memory(data).ok()?)
+}
+
+fn icon_handle_from_path(path: &PathBuf) -> Option<image::Handle> {
+    icon_handle_from_image(::image::open(path).ok()?)
+}
+
+fn icon_handle_from_image(image: ::image::DynamicImage) -> Option<image::Handle> {
+    let mut pixels = image.to_rgba8();
+    let (width, height) = pixels.dimensions();
+    let mut mask = Mask::new(width, height)?;
+    mask.fill_path(
+        &ios_icon_mask(width as f32, height as f32)?,
+        FillRule::Winding,
+        true,
+        Transform::identity(),
+    );
+
+    for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.data()) {
+        pixel[3] = ((u16::from(pixel[3]) * u16::from(*coverage) + 127) / 255) as u8;
+    }
+
+    Some(image::Handle::from_rgba(width, height, pixels.into_raw()))
+}
+
+fn ios_icon_mask(width: f32, height: f32) -> Option<Path> {
+    let radius = width.min(height) * IOS_ICON_CORNER_RADIUS_FACTOR;
+    let mut path = PathBuilder::new();
+    let tl = |x: f32, y: f32| (x * radius, y * radius);
+    let tr = |x: f32, y: f32| (width - x * radius, y * radius);
+    let br = |x: f32, y: f32| (width - x * radius, height - y * radius);
+    let bl = |x: f32, y: f32| (x * radius, height - y * radius);
+
+    let (x, y) = tl(IOS_ICON_EDGE, 0.0);
+    path.move_to(x, y);
+
+    let (x, y) = tr(IOS_ICON_EDGE, 0.0);
+    path.line_to(x, y);
+    let (x1, y1) = tr(IOS_ICON_CTRL_EDGE, 0.0);
+    let (x2, y2) = tr(IOS_ICON_CTRL_SHOULDER, 0.0);
+    let (x, y) = tr(IOS_ICON_SHOULDER, IOS_ICON_KNEE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = tr(IOS_ICON_CTRL_CURVE_OUTER, IOS_ICON_CTRL_CURVE_INNER);
+    let (x2, y2) = tr(IOS_ICON_CTRL_CURVE_INNER, IOS_ICON_CTRL_CURVE_OUTER);
+    let (x, y) = tr(IOS_ICON_KNEE, IOS_ICON_SHOULDER);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = tr(0.0, IOS_ICON_CTRL_SHOULDER);
+    let (x2, y2) = tr(0.0, IOS_ICON_CTRL_EDGE);
+    let (x, y) = tr(0.0, IOS_ICON_EDGE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+
+    let (x, y) = br(0.0, IOS_ICON_EDGE);
+    path.line_to(x, y);
+    let (x1, y1) = br(0.0, IOS_ICON_CTRL_EDGE);
+    let (x2, y2) = br(0.0, IOS_ICON_CTRL_SHOULDER);
+    let (x, y) = br(IOS_ICON_KNEE, IOS_ICON_SHOULDER);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = br(IOS_ICON_CTRL_CURVE_INNER, IOS_ICON_CTRL_CURVE_OUTER);
+    let (x2, y2) = br(IOS_ICON_CTRL_CURVE_OUTER, IOS_ICON_CTRL_CURVE_INNER);
+    let (x, y) = br(IOS_ICON_SHOULDER, IOS_ICON_KNEE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = br(IOS_ICON_CTRL_SHOULDER, 0.0);
+    let (x2, y2) = br(IOS_ICON_CTRL_EDGE, 0.0);
+    let (x, y) = br(IOS_ICON_EDGE, 0.0);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+
+    let (x, y) = bl(IOS_ICON_EDGE, 0.0);
+    path.line_to(x, y);
+    let (x1, y1) = bl(IOS_ICON_CTRL_EDGE, 0.0);
+    let (x2, y2) = bl(IOS_ICON_CTRL_SHOULDER, 0.0);
+    let (x, y) = bl(IOS_ICON_SHOULDER, IOS_ICON_KNEE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = bl(IOS_ICON_CTRL_CURVE_OUTER, IOS_ICON_CTRL_CURVE_INNER);
+    let (x2, y2) = bl(IOS_ICON_CTRL_CURVE_INNER, IOS_ICON_CTRL_CURVE_OUTER);
+    let (x, y) = bl(IOS_ICON_KNEE, IOS_ICON_SHOULDER);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = bl(0.0, IOS_ICON_CTRL_SHOULDER);
+    let (x2, y2) = bl(0.0, IOS_ICON_CTRL_EDGE);
+    let (x, y) = bl(0.0, IOS_ICON_EDGE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+
+    let (x, y) = tl(0.0, IOS_ICON_EDGE);
+    path.line_to(x, y);
+    let (x1, y1) = tl(0.0, IOS_ICON_CTRL_EDGE);
+    let (x2, y2) = tl(0.0, IOS_ICON_CTRL_SHOULDER);
+    let (x, y) = tl(IOS_ICON_KNEE, IOS_ICON_SHOULDER);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = tl(IOS_ICON_CTRL_CURVE_INNER, IOS_ICON_CTRL_CURVE_OUTER);
+    let (x2, y2) = tl(IOS_ICON_CTRL_CURVE_OUTER, IOS_ICON_CTRL_CURVE_INNER);
+    let (x, y) = tl(IOS_ICON_SHOULDER, IOS_ICON_KNEE);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+    let (x1, y1) = tl(IOS_ICON_CTRL_SHOULDER, 0.0);
+    let (x2, y2) = tl(IOS_ICON_CTRL_EDGE, 0.0);
+    let (x, y) = tl(IOS_ICON_EDGE, 0.0);
+    path.cubic_to(x1, y1, x2, y2, x, y);
+
+    path.close();
+    path.finish()
 }

@@ -18,6 +18,7 @@ log.workspace = true
 chrono.workspace = true
 rustls.workspace = true
 image.workspace = true
+tiny-skia = "0.11.4"
 plume_core = { path = "../../crates/plume_core", features = ["tweaks"] }
 plume_utils = { path = "../../crates/plume_utils" }
 plume_store = { path = "../../crates/plume_store" }

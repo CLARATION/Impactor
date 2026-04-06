@@ -5602,6 +5602,7 @@ dependencies = [
  "rustls 0.23.32",
  "single-instance",
  "thiserror 2.0.17",
+ "tiny-skia",
  "tokio",
  "tray-icon",
  "uuid",
@@ -7505,6 +7506,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
+ "png 0.17.16",
  "tiny-skia-path",
 ]
 
