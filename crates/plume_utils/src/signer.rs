@@ -290,15 +290,22 @@ impl Signer {
                 }
 
                 if let Some(app_groups) = macho.app_groups_for_entitlements() {
-                    let mut app_group_ids: Vec<String> = Vec::new();
-                    for group in &app_groups {
-                        let mut group_name = format!("{group}.{team_id}");
+                    let group_names: Vec<String> = app_groups
+                        .iter()
+                        .enumerate()
+                        .map(|(i, _)| {
+                            if app_groups.len() == 1 {
+                                format!("group.{id}")
+                            } else {
+                                format!("group.{id}.{i}")
+                            }
+                        })
+                        .collect();
 
-                        if is_refresh {
-                            group_name = group.clone();
-                        }
+                    let mut app_group_ids: Vec<String> = Vec::new();
+                    for group_name in &group_names {
                         let group_id = session
-                            .qh_ensure_app_group(&team_id, &group_name, &group_name)
+                            .qh_ensure_app_group(&team_id, group_name, group_name)
                             .await?;
                         app_group_ids.push(group_id.application_group);
                     }
@@ -309,9 +316,9 @@ impl Signer {
                             bundle.set_info_plist_key(
                                 "ALTAppGroups",
                                 Value::Array(
-                                    app_groups
+                                    group_names
                                         .iter()
-                                        .map(|s| Value::String(format!("{s}.{team_id}")))
+                                        .map(|s| Value::String(s.clone()))
                                         .collect(),
                                 ),
                             )?;
