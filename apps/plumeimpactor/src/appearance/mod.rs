@@ -19,7 +19,7 @@ pub(crate) const THEME_ICON_SIZE: f32 = 12.0;
 
 pub(crate) fn p_font() -> iced::Font {
     iced::Font {
-        family: iced::font::Family::Monospace,
+        family: iced::font::Family::Name("Hack".into()),
         weight: iced::font::Weight::Normal,
         stretch: iced::font::Stretch::Normal,
         style: iced::font::Style::Normal,

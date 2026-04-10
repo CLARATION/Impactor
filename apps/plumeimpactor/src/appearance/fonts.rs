@@ -5,7 +5,10 @@ use iced::{Color, Element};
 use super::THEME_ICON_SIZE;
 
 pub(crate) fn load_fonts() -> Vec<std::borrow::Cow<'static, [u8]>> {
-    vec![include_bytes!("./plume_icons.ttf").as_slice().into()]
+    vec![
+        include_bytes!("./plume_icons.ttf").as_slice().into(),
+        include_bytes!("./Hack-Regular.ttf").as_slice().into(),
+    ]
 }
 
 pub(crate) const GEAR: &str = "\u{e800}";
