@@ -1,5 +1,6 @@
 use iced::widget::{button, column, container, row, rule, scrollable, text, toggler};
 use iced::{Center, Color, Element, Task};
+use rust_i18n::t;
 
 use crate::appearance;
 use crate::defaults::get_data_path;
@@ -72,7 +73,9 @@ impl UtilitiesScreen {
         };
 
         if screen.device.as_ref().map(|d| d.is_mac).unwrap_or(false) {
-            screen.status_message = Some(StatusMessage::error("macOS devices are not supported"));
+            screen.status_message = Some(StatusMessage::error(t!(
+                "utilities_mac_devices_not_supported"
+            )));
         }
 
         screen
@@ -219,7 +222,7 @@ impl UtilitiesScreen {
                 match result {
                     Ok(_) => {
                         self.status_message =
-                            Some(StatusMessage::success("Device paired successfully!"));
+                            Some(StatusMessage::success(t!("utilities_paired_success")));
                     }
                     Err(e) => {
                         self.status_message = Some(StatusMessage::error(e));
@@ -229,7 +232,7 @@ impl UtilitiesScreen {
             }
             Message::InstallPairingResult(app_key, result) => {
                 let status = match result {
-                    Ok(_) => StatusMessage::success("Pairing file installed successfully!"),
+                    Ok(_) => StatusMessage::success(t!("utilities_device_paired_success")),
                     Err(e) => StatusMessage::error(e),
                 };
                 self.app_statuses.insert(app_key, status);
@@ -254,8 +257,9 @@ impl UtilitiesScreen {
                 .spacing(4),
             );
         } else {
-            content =
-                content.push(text("No device connected").color(Color::from_rgb(0.7, 0.7, 0.7)));
+            content = content.push(
+                text(t!("utilities_no_device_connected")).color(Color::from_rgb(0.7, 0.7, 0.7)),
+            );
         }
 
         if let Some(ref status) = self.status_message {
@@ -264,15 +268,15 @@ impl UtilitiesScreen {
 
         if self.device.is_some() && !self.device.as_ref().unwrap().is_mac {
             let refresh_button_text = if self.loading {
-                "Loading..."
+                t!("utilities_loading")
             } else {
-                "Refresh Installed Apps"
+                t!("utilities_refresh_installed_apps")
             };
 
             let trust_button_text = if self.trust_loading {
-                "Pairing..."
+                t!("utilities_pairing")
             } else {
-                "Trust Device"
+                t!("utilities_trust_device")
             };
 
             content = content.push(
@@ -299,7 +303,7 @@ impl UtilitiesScreen {
         }
 
         let toggle = toggler(self.rppairing_enabled)
-            .label("Use Remote Pairing (17.4+)")
+            .label(t!("utilities_use_remote_pairing"))
             .on_toggle(Message::ToggleRPPairing);
 
         content = content.push(toggle);
@@ -321,7 +325,7 @@ impl UtilitiesScreen {
                         ))
                         .size(14)
                         .width(iced::Length::Fill),
-                        button(text("Install Pairing").align_x(Center))
+                        button(text(t!("utilities_install_pairing")).align_x(Center))
                             .on_press(Message::InstallPairingFile(app.clone()))
                             .style(appearance::s_button)
                     ]

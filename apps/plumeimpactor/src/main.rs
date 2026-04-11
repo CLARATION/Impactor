@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+rust_i18n::i18n!("../../locales", fallback = "en");
+
 use crate::refresh::spawn_refresh_daemon;
 
 #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]

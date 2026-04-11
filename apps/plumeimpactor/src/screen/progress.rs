@@ -4,6 +4,7 @@ use iced::Element;
 use iced::Length::Fill;
 use iced::Task;
 use iced::widget::{button, column, container, row, text};
+use rust_i18n::t;
 
 use crate::appearance;
 
@@ -56,7 +57,7 @@ impl ProgressScreen {
                     let error_msg = status.clone();
                     std::thread::spawn(move || {
                         rfd::MessageDialog::new()
-                            .set_title("Installation Failed")
+                            .set_title(t!("progress_failed"))
                             .set_description(&error_msg)
                             .set_buttons(rfd::MessageButtons::Ok)
                             .show();
@@ -72,13 +73,13 @@ impl ProgressScreen {
             }
             Message::InstallationError(error) => {
                 self.progress = -1;
-                self.status = format!("Error: {}", error);
+                self.status = format!("ERR: {}", error);
                 self.progress_rx = None;
                 self.is_installing = false;
 
                 std::thread::spawn(move || {
                     rfd::MessageDialog::new()
-                        .set_title("Installation Failed")
+                        .set_title(t!("progress_failed"))
                         .set_description(&error)
                         .set_buttons(rfd::MessageButtons::Ok)
                         .show();
@@ -88,7 +89,7 @@ impl ProgressScreen {
             }
             Message::InstallationFinished => {
                 self.progress = 100;
-                self.status = "Finished!".to_string();
+                self.status = t!("progress_finished").to_string();
                 self.progress_rx = None;
                 self.is_installing = false;
 
@@ -102,7 +103,7 @@ impl ProgressScreen {
         let progress_bar = iced::widget::progress_bar(0.0..=100.0, self.progress as f32);
 
         let screen_content = column![
-            text("Installing application, this will take a moment. Do not disconnect the device until finished.").size(14),
+            text(t!("progress_installing_application")).size(14),
             text(format!("{}% – {}", self.progress, self.status)).size(14),
             progress_bar,
             container(text("")).height(Fill),
@@ -120,7 +121,7 @@ impl ProgressScreen {
         container(row![
             button(appearance::icon_text(
                 appearance::CHEVRON_BACK,
-                "Back",
+                t!("back"),
                 None
             ))
             .on_press_maybe((!self.is_installing).then_some(Message::Back))

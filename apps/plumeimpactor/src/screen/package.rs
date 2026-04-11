@@ -3,6 +3,7 @@ use iced::widget::{
 };
 use iced::{Alignment, Center, Element, Fill, Task};
 use plume_utils::{Package, PlistInfoTrait, SignerInstallMode, SignerMode, SignerOptions};
+use rust_i18n::t;
 use std::path::PathBuf;
 use tiny_skia::{FillRule, Mask, Path, PathBuilder, Transform};
 
@@ -52,9 +53,7 @@ impl PackageScreen {
             .and_then(|data| icon_handle_from_bytes(data));
 
         let custom_icon_path = options.custom_icon.clone();
-        let custom_icon_handle = custom_icon_path
-            .as_ref()
-            .and_then(icon_handle_from_path);
+        let custom_icon_handle = custom_icon_path.as_ref().and_then(icon_handle_from_path);
 
         Self {
             selected_package: package,
@@ -257,8 +256,8 @@ impl PackageScreen {
 
     fn view_no_package(&self) -> Element<'_, Message> {
         column![
-            text("No package selected").size(32),
-            text("Go back and select a file").size(16),
+            text(t!("options_no_package")).size(32),
+            text(t!("options_go_back_and_get_package")).size(16),
         ]
         .spacing(appearance::THEME_PADDING)
         .align_x(Center)
@@ -274,9 +273,9 @@ impl PackageScreen {
             row![
                 self.view_custom_icon(),
                 column![
-                    text("Name:").size(12),
+                    text(t!("options_name")).size(12),
                     text_input(
-                        "App name",
+                        "example",
                         self.options.custom_name.as_ref().unwrap_or(&pkg_name)
                     )
                     .on_input(Message::UpdateCustomName)
@@ -285,32 +284,40 @@ impl PackageScreen {
                 .spacing(8),
             ]
             .spacing(8),
-            text("Identifier:").size(12),
+            text(t!("options_identifier")).size(12),
             text_input(
-                "Bundle identifier",
+                "com.example.app",
                 self.options.custom_identifier.as_ref().unwrap_or(&pkg_id)
             )
             .on_input(Message::UpdateCustomIdentifier)
             .padding(8),
-            text("Version:").size(12),
+            text(t!("options_version")).size(12),
             text_input(
-                "Version",
+                "1.0.0",
                 self.options.custom_version.as_ref().unwrap_or(&pkg_ver)
             )
             .on_input(Message::UpdateCustomVersion)
             .padding(8),
-            text("Entitlements:").size(12),
+            text(t!("options_entitlements")).size(12),
             self.view_custom_entitlements(),
-            text("Only available if \"Only Register Main Bundle\" is enabled.").size(11),
-            text("Tweaks:").size(12),
+            text(t!("options_entitlements_warn")).size(11),
+            text(t!("options_tweaks")).size(12),
             self.view_tweaks(),
             row![
-                button(appearance::icon_text(appearance::PLUS, "Add Tweak", None))
-                    .on_press(Message::AddTweak)
-                    .style(appearance::s_button),
-                button(appearance::icon_text(appearance::PLUS, "Add Bundle", None))
-                    .on_press(Message::AddBundle)
-                    .style(appearance::s_button),
+                button(appearance::icon_text(
+                    appearance::PLUS,
+                    t!("options_add_tweak"),
+                    None
+                ))
+                .on_press(Message::AddTweak)
+                .style(appearance::s_button),
+                button(appearance::icon_text(
+                    appearance::PLUS,
+                    t!("options_add_bundle"),
+                    None
+                ))
+                .on_press(Message::AddBundle)
+                .style(appearance::s_button),
             ]
             .spacing(8),
         ]
@@ -321,51 +328,51 @@ impl PackageScreen {
 
     fn view_options_column(&self) -> Element<'_, Message> {
         column![
-            text("General:").size(12),
+            text(t!("options_general")).size(12),
             checkbox(self.options.features.support_minimum_os_version)
-                .label("Support older versions (7+)")
+                .label(t!("options_support_versions"))
                 .on_toggle(Message::ToggleMinimumOsVersion),
             checkbox(self.options.features.support_file_sharing)
-                .label("Force File Sharing")
+                .label(t!("options_file_sharing"))
                 .on_toggle(Message::ToggleFileSharing),
             checkbox(self.options.features.support_ipad_fullscreen)
-                .label("Force iPad Fullscreen")
+                .label(t!("options_ipad_fullscreen"))
                 .on_toggle(Message::ToggleIpadFullscreen),
             checkbox(self.options.features.support_game_mode)
-                .label("Force Game Mode")
+                .label(t!("options_game_mode"))
                 .on_toggle(Message::ToggleGameMode),
             checkbox(self.options.features.support_pro_motion)
-                .label("Force Pro Motion")
+                .label(t!("options_pro_motion"))
                 .on_toggle(Message::ToggleProMotion),
-            text("Advanced:").size(12),
+            text(t!("options_advanced")).size(12),
             checkbox(self.options.embedding.single_profile)
-                .label("Only Register Main Bundle")
+                .label(t!("options_register_main_bundle"))
                 .on_toggle(Message::ToggleSingleProfile),
             checkbox(self.options.features.support_liquid_glass)
-                .label("Force Liquid Glass (26+)")
+                .label(t!("options_liquid_glass"))
                 .on_toggle(Message::ToggleLiquidGlass),
             checkbox(self.options.features.support_ellekit)
-                .label("Replace Substrate with ElleKit")
+                .label(t!("options_ellekit"))
                 .on_toggle(Message::ToggleElleKit),
             checkbox(self.options.refresh)
-                .label("Auto Refresh [BETA]")
+                .label(t!("options_auto_refresh"))
                 .on_toggle(Message::ToggleRefresh),
-            text("Mode:").size(12),
+            text(t!("options_mode")).size(12),
             pick_list(
                 &[SignerInstallMode::Install, SignerInstallMode::Export][..],
                 Some(self.options.install_mode),
                 Message::UpdateInstallMode
             )
             .style(appearance::s_pick_list)
-            .placeholder("Select mode"),
-            text("Signing:").size(12),
+            .placeholder(t!("options_mode_desc")),
+            text(t!("options_signing")).size(12),
             pick_list(
                 &[SignerMode::Pem, SignerMode::Adhoc, SignerMode::None][..],
                 Some(self.options.mode),
                 Message::UpdateSignerMode
             )
             .style(appearance::s_pick_list)
-            .placeholder("Select signing method"),
+            .placeholder(t!("options_signing_desc")),
         ]
         .spacing(8)
         .width(Fill)
@@ -374,15 +381,15 @@ impl PackageScreen {
 
     fn view_buttons(&self, has_device: bool) -> Element<'_, Message> {
         let (button_enabled, button_label) = match self.options.install_mode {
-            SignerInstallMode::Install => (has_device, "Install"),
-            SignerInstallMode::Export => (true, "Export"),
+            SignerInstallMode::Install => (has_device, t!("install")),
+            SignerInstallMode::Export => (true, t!("export")),
         };
 
         container(
             row![
                 button(appearance::icon_text(
                     appearance::CHEVRON_BACK,
-                    "Back",
+                    t!("back"),
                     None
                 ))
                 .on_press(Message::Back)

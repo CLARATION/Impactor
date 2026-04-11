@@ -3,6 +3,7 @@ use iced::widget::{button, column, container, row, text, text_input};
 use iced::{Alignment, Element, Fill, Task, window};
 use plume_core::{AnisetteConfiguration, auth::Account};
 use plume_store::{AccountStore, GsaAccount};
+use rust_i18n::t;
 use std::sync::mpsc as std_mpsc;
 
 use crate::appearance;
@@ -178,12 +179,12 @@ impl LoginWindow {
     }
 
     fn view_login(&self) -> Element<'_, Message> {
-        let email_input = text_input("Email", &self.email)
+        let email_input = text_input("example@riseup.net", &self.email)
             .on_input(Message::EmailChanged)
             .padding(8)
             .width(Fill);
 
-        let mut password_input = text_input("Password", &self.password)
+        let mut password_input = text_input("1234", &self.password)
             .on_input(Message::PasswordChanged)
             .secure(true)
             .padding(8)
@@ -193,11 +194,10 @@ impl LoginWindow {
         }
 
         let mut content = column![
-            text("Your Apple ID is used to sign and install apps. Credentials sent only to Apple.")
-                .size(14),
-            text("Email:").size(14),
+            text(t!("login_only_set_to_fruit")).size(14),
+            text(t!("login_email")).size(14),
             email_input,
-            text("Password:").size(14),
+            text(t!("login_password")).size(14),
             password_input,
         ]
         .spacing(appearance::THEME_PADDING)
@@ -211,14 +211,14 @@ impl LoginWindow {
 
         let buttons = row![
             container(text("")).width(Fill),
-            button("Cancel")
+            button(text(t!("cancel")))
                 .on_press(Message::LoginCancel)
                 .style(appearance::s_button),
-            button(if self.is_logging_in {
-                "Logging In..."
+            button(text(if self.is_logging_in {
+                t!("login_loading")
             } else {
-                "Next"
-            })
+                t!("next")
+            }))
             .on_press_maybe(if self.is_logging_in {
                 None
             } else {
@@ -244,8 +244,8 @@ impl LoginWindow {
         }
 
         let mut content = column![
-            text("Two-Factor Authentication").size(20),
-            text("Enter the verification code sent to your device:").size(14),
+            text(t!("login_two_fa")).size(20),
+            text(t!("login_two_fa_desc")).size(14),
             code_input,
         ]
         .spacing(appearance::THEME_PADDING)
@@ -259,15 +259,15 @@ impl LoginWindow {
         }
 
         let buttons = row![
-            button("Cancel")
+            button(text(t!("cancel")))
                 .on_press(Message::TwoFactorCancel)
                 .style(appearance::s_button)
                 .padding(8),
-            button(if self.is_logging_in {
-                "Verifying..."
+            button(text(if self.is_logging_in {
+                t!("login_verifying")
             } else {
-                "Verify"
-            })
+                t!("login_verify")
+            }))
             .on_press_maybe(if self.is_logging_in {
                 None
             } else {

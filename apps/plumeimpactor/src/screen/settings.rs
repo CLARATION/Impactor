@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use iced::widget::{button, checkbox, column, container, pick_list, row, scrollable, text};
 use iced::{Alignment, Element, Fill, Task};
 use plume_store::AccountStore;
+use rust_i18n::t;
 
 use crate::appearance;
 
@@ -63,7 +64,7 @@ impl SettingsScreen {
 
     pub fn view<'a>(&'a self, account_store: &'a Option<AccountStore>) -> Element<'a, Message> {
         let Some(store) = account_store else {
-            return column![text("Loading accounts...")]
+            return column![text(t!("settings_loading_accounts"))]
                 .spacing(appearance::THEME_PADDING)
                 .padding(appearance::THEME_PADDING)
                 .into();
@@ -116,11 +117,11 @@ impl SettingsScreen {
                         };
 
                         let placeholder = if is_loading {
-                            "Loading teams...".to_string()
+                            t!("settings_select_teams").to_string()
                         } else if !team_id.is_empty() {
                             team_id.to_string()
                         } else {
-                            "Select team...".to_string()
+                            t!("settings_loading_teams").to_string()
                         };
 
                         let email_owned = email.to_string();
@@ -150,7 +151,7 @@ impl SettingsScreen {
                 },
             ));
         } else {
-            content = content.push(text("No accounts added yet"));
+            content = content.push(text(t!("settings_no_accounts_yet")));
         }
 
         let auto_start_enabled = crate::startup::auto_start_enabled();
@@ -162,16 +163,20 @@ impl SettingsScreen {
 
     fn view_auto_start_toggle(&self, auto_start_enabled: bool) -> Element<'_, Message> {
         checkbox(auto_start_enabled)
-            .label("Launch on Startup")
+            .label(t!("settings_launch_on_startup"))
             .on_toggle(Message::ToggleAutoStart)
             .into()
     }
 
     fn view_account_buttons(&self, selected_index: Option<usize>) -> Element<'_, Message> {
         let mut buttons = row![
-            button(appearance::icon_text(appearance::PLUS, "Add Account", None))
-                .on_press(Message::ShowLogin)
-                .style(appearance::s_button)
+            button(appearance::icon_text(
+                appearance::PLUS,
+                t!("settings_add_account"),
+                None
+            ))
+            .on_press(Message::ShowLogin)
+            .style(appearance::s_button)
         ]
         .spacing(appearance::THEME_PADDING);
 
@@ -180,16 +185,20 @@ impl SettingsScreen {
                 .push(
                     button(appearance::icon_text(
                         appearance::MINUS,
-                        "Remove Account",
+                        t!("settings_remove_account"),
                         None,
                     ))
                     .on_press(Message::RemoveAccount(index))
                     .style(appearance::s_button),
                 )
                 .push(
-                    button(appearance::icon_text(appearance::SHARE, "Export P12", None))
-                        .on_press(Message::ExportP12)
-                        .style(appearance::s_button),
+                    button(appearance::icon_text(
+                        appearance::SHARE,
+                        t!("settings_export_p12"),
+                        None,
+                    ))
+                    .on_press(Message::ExportP12)
+                    .style(appearance::s_button),
                 );
         }
 
