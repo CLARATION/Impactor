@@ -87,6 +87,14 @@ Supported apps for pairing file:
 
 You can retrieve this file by either sideloading the supported app of your choice, or going to the `Utilities` page when a device is connected and press install for the supported app. Head over to the [downloads](https://github.com/khcrysalis/PlumeImpactor/releases).
 
+## Translating
+
+Impactor now has translation support, all localizations are located in `locales/<lang>.toml`.
+
+To add a new language, copy `en.toml` to `<language_code>.toml` so all the strings are copied appropriately, and start translating!
+
+To properly contribute and test potentially test localizations, you can head over to the [contributing guide](./contributing.md).
+
 ## Sponsors
 
 | Thanks to all my [sponsors](https://github.com/sponsors/khcrysalis)!! |
