@@ -93,7 +93,7 @@ Impactor now has translation support, all localizations are located in `locales/
 
 To add a new language, copy `en.toml` to `<language_code>.toml` so all the strings are copied appropriately, and start translating!
 
-To properly contribute and test potentially test localizations, you can head over to the [contributing guide](./contributing.md).
+To properly contribute and test potentially test localizations, you can head over to the [contributing guide](./CONTRIBUTING.md).
 
 ## Sponsors
 
