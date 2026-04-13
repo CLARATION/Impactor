@@ -1,0 +1,73 @@
+_language_name = "Deutsch"
+
+install = "Laden"
+export = "Exportieren"
+drag_and_drop = "IPA per Drag & Drop hier ablegen"
+select_ipa = "Wähle eine IPA/TIPA Datei aus"
+ipa = "iOS Anwendungspaket"
+utilities = "Dienstprogramme"
+import_ipa = "Importiere eine .ipa / .tipa Datei"
+donate = "Spende!"
+star_us = "Gib uns einen Stern auf GitHub!"
+back = "Zurück"
+cancel = "Abbrechen"
+next = "Weiter"
+
+options_no_package = "Kein Paket ausgewählt"
+options_go_back_and_get_package = "Gehe zurück und wähle eine Datei aus"
+options_name = "Name:"
+options_identifier = "Identifier:"                                                                # Apple it self does not translate those to german, because germany use these words too (they would sound ackward translated)
+options_version = "Version:"
+options_entitlements = "Entitlements:"                                                            # Apple it self does not translate those to german, because germany use these words too (they would sound ackward translated)
+options_entitlements_warn = "Nur verfügbar, wenn \"Nur Main-Bundle registrieren\" aktiviert ist."
+options_tweaks = "Tweaks:"                                                                        # We don't translate those, germans also use the word tweaks when talking about modifying iOS and certain apps so translating the word "Tweaks would add confusion"
+options_add_tweak = "Tweak Hinzufügen"                                                            # More about button aesthetiks, you dont want the 2nd word although in language its written with a small latter on a button every german UX developer writes them with big letters
+options_add_bundle = "Bundle Hinzufügen"
+options_general = "Allgemein:"
+options_support_versions = "Ältere Versionen unterstützen (7+)"
+options_file_sharing = "File Sharing erzwingen"                                                   # Same as tweaks, this is a functionality, translating the word adds complexity
+options_ipad_fullscreen = "iPad-Vollbild erzwingen"
+options_game_mode = "Game Mode erzwingen"                                                         # Same as tweaks, this is a functionality, translating the word adds complexity
+options_pro_motion = "Pro Motion erzwingen"                                                       # Same as tweaks, this is a functionality, translating the word adds complexity
+options_advanced = "Erweitert:"
+options_register_main_bundle = "Nur Main-Bundle registrieren"                                     # Same as tweaks, this is a defined word, translating the word adds complexity
+options_liquid_glass = "Liquid Glass (26+) erzwingen"
+options_ellekit = "Substrate durch ElleKit ersetzen"
+options_auto_refresh = "Automatisch aktualisieren [BETA]"
+options_mode = "Modus:"
+options_mode_desc = "Modus auswählen"
+options_signing = "Signing:"                                                                      # Same as tweaks, this is a defined word, translating the word adds complexity
+options_signing_desc = "Signing-Methode auswählen"
+
+settings_loading_accounts = "Lade Accounts..."
+settings_add_account = "Account Hinzufügen"
+settings_remove_account = "Account Entfernen"
+settings_no_accounts_yet = "Es wurde bisher noch kein Account hinzugefügt"
+settings_launch_on_startup = "Beim Systemstart öffnen"
+settings_export_p12 = "P12 Exportieren"
+settings_select_teams = "Team auswählen..."
+settings_loading_teams = "Lade Teams..."
+
+utilities_loading = "Laden..."
+utilities_refresh_installed_apps = "Installierte Apps reinstallieren"
+utilities_pairing = "Pairing..."
+utilities_trust_device = "Gerät Vertrauen"
+utilities_install_pairing = "Installiere Pairing"
+utilities_use_remote_pairing = "Remote Pairing verwenden (17.4+)"
+utilities_no_device_connected = "Kein Gerät Verbunden"
+utilities_device_paired_success = "Pairing-Datei erfolgreich installiert!"
+utilities_paired_success = "Gerät erfolgreich gepaired!"
+utilities_mac_devices_not_supported = "macOS Geräte werden nicht unterstützt"
+
+progress_installing_application = "App wird installiert, dies kann einen Moment dauern. Trenne das Gerät nicht, bis der Vorgang abgeschlossen ist."
+progress_finished = "Fertig!"
+progress_failed = "Installation fehlgeschlagen"
+
+login_only_set_to_fruit = "Deine Apple ID wird verwendet um apps zu installieren. Die Daten werden nur an Apple gesendet."
+login_email = "Email:"                                                                          # God damn the german language has so many english-to-german bridging casts :3
+login_password = "Password:"                                                                    # God damn the german language has so many english-to-german bridging casts :3
+login_loading = "Anmelden..."
+login_two_fa = "Zwei-Faktor Authentikation"
+login_two_fa_desc = "Gib den Bestätigungscode ein, der an dein Gerät gesendet wurde:"
+login_verify = "Bestätigen"
+login_verifying = "Bestätigen..."
