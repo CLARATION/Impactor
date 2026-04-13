@@ -179,7 +179,7 @@ impl Account {
         )?;
 
         let verifier = srp_client
-            .process_reply(&a, username.as_bytes(), &password_buf, salt, b_pub)
+            .process_reply(&a, username_for_spd.as_bytes(), &password_buf, salt, b_pub)
             .unwrap();
 
         let challenge_body = ChallengeRequestBody {
