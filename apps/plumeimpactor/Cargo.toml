@@ -32,6 +32,7 @@ notify-rust = "4.11"                                                          # 
 single-instance = "0.3"                                                       # Ensuring single instance of the app on Linux and Windows
 auto-launcher = "0.6"                                                         # Auto-launching on startup
 rust-i18n = "4.0"
+current_locale = "0.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plume_gestalt = { path = "../../crates/plume_gestalt" }

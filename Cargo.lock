@@ -1802,6 +1802,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "current_locale"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0be8ddcccda8be68d8e31a421ceea7c79857404daa052434ae30ce2f402cd10"
+dependencies = [
+ "libc",
+ "objc",
+ "objc-foundation",
+ "winapi",
+]
+
+[[package]]
 name = "cursor-icon"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5759,6 +5771,7 @@ version = "2.2.3"
 dependencies = [
  "auto-launcher",
  "chrono",
+ "current_locale",
  "env_logger",
  "futures",
  "gtk",

@@ -28,6 +28,11 @@ fn main() -> iced::Result {
         .install_default()
         .ok();
 
+    if let Ok(locale) = current_locale::current_locale() {
+        log::info!("Setting locale to {locale}...");
+        rust_i18n::set_locale(&locale);
+    }
+
     #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
     let _single_instance = match SingleInstance::new(&crate::relaunch::single_instance_key()) {
         Ok(instance) => {
