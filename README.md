@@ -84,6 +84,7 @@ Supported apps for pairing file:
 - [`StikDebug`](https://github.com/StephenDev0/StikDebug): Enable JIT for iOS apps.
 - [`EnsWilde`](https://github.com/YangJiiii/EnsWilde): Device customizer.
 - [`ByeTunes`](https://github.com/EduAlexxis/ByeTunes): Import mp3 files to the Music App.
+- [`Reynard Browser`](https://github.com/minh-ton/reynard-browser): An experimental Gecko-based web browser for iOS 14+.
 
 You can retrieve this file by either sideloading the supported app of your choice, or going to the `Utilities` page when a device is connected and press install for the supported app. Head over to the [downloads](https://github.com/khcrysalis/PlumeImpactor/releases).
 
