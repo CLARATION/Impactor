@@ -1,5 +1,5 @@
 [package]
-name = "plume_compression"
+name = "decompress"
 edition.workspace = true
 version.workspace = true
 authors.workspace = true

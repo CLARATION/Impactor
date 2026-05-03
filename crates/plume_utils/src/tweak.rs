@@ -87,7 +87,7 @@ impl Tweak {
     }
 
     async fn install_deb(&self) -> Result<(), Error> {
-        use plume_compression::ExtractOpts;
+        use decompress::ExtractOpts;
 
         let extract_dir = self.stage_dir.join("deb_contents");
         tokio::fs::create_dir_all(&extract_dir).await?;
@@ -99,7 +99,7 @@ impl Tweak {
         let ar_extract_dir_sync = ar_extract_dir.clone();
 
         tokio::task::spawn_blocking(move || {
-            plume_compression::decompress(
+            decompress::decompress(
                 &ar_path_sync,
                 &ar_extract_dir_sync,
                 &ExtractOpts {
@@ -128,7 +128,7 @@ impl Tweak {
                 let data_path_sync = data_path.clone();
 
                 tokio::task::spawn_blocking(move || {
-                    plume_compression::decompress(
+                    decompress::decompress(
                         &data_path_sync,
                         &extract_dir_sync,
                         &ExtractOpts {
