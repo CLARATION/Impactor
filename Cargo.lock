@@ -3770,8 +3770,8 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idevice"
-version = "0.1.57"
-source = "git+https://github.com/PlumeImpactor/plume-idevice?rev=3c9dce32e5d1f8a36b9180f63515e999edeae68a#3c9dce32e5d1f8a36b9180f63515e999edeae68a"
+version = "0.1.58"
+source = "git+https://github.com/jkcoxson/idevice?rev=5171e34e3a236842af1160a84d955d037ddca3af#5171e34e3a236842af1160a84d955d037ddca3af"
 dependencies = [
  "aes 0.8.4",
  "async-stream",
@@ -3790,6 +3790,7 @@ dependencies = [
  "indexmap",
  "jktcp",
  "json",
+ "libc",
  "ns-keyed-archive",
  "plist",
  "plist-macro",
@@ -3801,6 +3802,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "sha2 0.10.9",
+ "siphasher",
  "thiserror 2.0.17",
  "tokio",
  "tokio-rustls 0.26.3",
