@@ -5,7 +5,7 @@ use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
 
 #[link(name = "ucrt")]
-extern "C" {
+unsafe extern "C" {
     fn _errno() -> *mut libc::c_int;
     fn _timespec64_get(__ts: *mut libc::timespec, __base: libc::c_int) -> libc::c_int;
     fn _chsize(handle: i64, length: u64) -> usize;
