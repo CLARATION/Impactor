@@ -17,10 +17,8 @@ futures.workspace = true
 log.workspace = true
 image.workspace = true
 goblin.workspace = true
+zip.workspace = true
+flate2.workspace = true
 plume_core = { path = "../plume_core", features = ["tweaks"] }
 plume_store = { path = "../plume_store" }
-
-# TODO: replace zip with decompress
-zip = { version = "4.3", default-features = false, features = ["deflate"] }
-decompress = { git = "https://github.com/PlumeImpactor/decompress", rev = "75a3016" }
-flate2 = "1.1"
+decompress = { path = "../../3rdparty/decompress" }

@@ -1,0 +1,25 @@
+[package]
+name = "decompress"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+regex.workspace = true
+thiserror.workspace = true
+flate2.workspace = true
+zip.workspace = true
+lazy_static = "1.5"
+derive_builder = "0.20"
+ar = "0.9"
+tar = "0.4"
+bzip2 = "0.6"
+xz2 = "0.1"
+lzma-rs = "0.3"
+zstd = "0.13"
+infer = "0.19"
