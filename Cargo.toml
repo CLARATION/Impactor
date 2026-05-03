@@ -2,7 +2,8 @@
 resolver = "3"
 members = [
     "apps/plumeimpactor",
-    "apps/plumesign",
+    "apps/plumesign", 
+    "crates/plume_compression",
     "crates/plume_core",
     "crates/plume_gestalt", 
     "crates/plume_store",
@@ -54,3 +55,6 @@ rustls = { version = "0.23", default-features = false, features = [
 ] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 goblin = "0.9"
+regex = "1.11"
+flate2 = "1.1"
+zip = "8.6"

@@ -16,14 +16,15 @@ Impactor is a sideloading app meant to be used on stock versions, to keep compat
 
 The project is seperated in multiple modules, all serve single or multiple uses depending on their importance.
 
-| Module                 | Description                                                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `apps/plumeimpactor`   | GUI interface for the crates shown below, backend using Iced.                                                                 |
-| `apps/plumesign`       | Simple CLI interface for signing, using `clap`.                                                                               |
-| `crates/plume_core`.   | Handles all api request used for communicating with Apple developer services, along with providing auth for Apple's grandslam |
-| `crates/plume_gestalt` | Wrapper for `libMobileGestalt.dylib`, used for obtaining your Mac's UDID for Apple Silicon sideloading.                       |
-| `crates/plume_utils`   | Shared code between GUI and CLI, contains signing and modification logic, and helpers.                                        |
-| `crates/plume_shared`  | Shared code between GUI and CLI, contains keychain functionality and shared datapaths.                                        |
+| Module                        | Description                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/plumeimpactor`          | GUI interface for the crates shown below, backend using Iced.                                                                     |
+| `apps/plumesign`              | Simple CLI interface for signing, using `clap`.                                                                                   |
+| `crates/plume_compression`.   | Handles compression logic, copied and modified from https://github.com/rusty-ferris-club/decompress.                              |
+| `crates/plume_core`.          | Handles all api request used for communicating with Apple developer services, along with providing auth for Apple's grandslam.    |
+| `crates/plume_gestalt`        | Wrapper for `libMobileGestalt.dylib`, used for obtaining your Mac's UDID for Apple Silicon sideloading.                           |
+| `crates/plume_utils`          | Shared code between GUI and CLI, contains signing and modification logic, and helpers.                                            |
+| `crates/plume_shared`         | Shared code between GUI and CLI, contains keychain functionality and shared datapaths.                                            |
 
 ### Building
 
