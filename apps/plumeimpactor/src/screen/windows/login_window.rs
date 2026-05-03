@@ -179,12 +179,12 @@ impl LoginWindow {
     }
 
     fn view_login(&self) -> Element<'_, Message> {
-        let email_input = text_input("example@riseup.net", &self.email)
+        let email_input = text_input("claration@riseup.net", &self.email)
             .on_input(Message::EmailChanged)
             .padding(8)
             .width(Fill);
 
-        let mut password_input = text_input("1234", &self.password)
+        let mut password_input = text_input("password", &self.password)
             .on_input(Message::PasswordChanged)
             .secure(true)
             .padding(8)
